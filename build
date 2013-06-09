@@ -11,6 +11,7 @@ action ()
     case $1 in
       default)      $OCAMLBUILD vz.cmx ;;
       tests)        $OCAMLBUILD test.native;;
+      colors)       shift; devel/jsoo-build $* test/colors.ml ;;
       doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
       api-doc)      shift; devel/pkg-doc $* doc/api.docdir ;;
       distrib)      devel/pkg-distrib ;;

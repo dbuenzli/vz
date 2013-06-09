@@ -5,5 +5,5 @@
 #require "gg"
 #require "vg"
  
-#load "vg.cmo";;
+#load "vz.cmo";;
 open Vz;;

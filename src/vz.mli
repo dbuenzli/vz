@@ -8,8 +8,7 @@
 
     [Vz] helps you to map data to [Vg] images. 
 
-    {e Release %%VERSION%% - %%AUTHORS%% } 
-*)
+    {e Release %%VERSION%% - %%AUTHORS%% } *)
 
 open Gg
 open Vg
@@ -18,7 +17,7 @@ open Vg
 
 (** Color schemes. 
 
-    [Color] provides functions to generate continuous and discrete
+    [Colors] provides functions to generate continuous and discrete
     color schemes to map quantitative or qualitative data to colors.
 
     {b References.}
@@ -26,30 +25,35 @@ open Vg
     {- M. Wijffelaars et al. 
     {{:http://dx.doi.org/10.1111/j.1467-8659.2008.01203.x}
     {e Generating Color Palettes using Intuitive Parameters}}, 2008.}
-    {- C. Brewer. {{:http://www.colorbrewer.org}www.colorbrewer.org}, 2002.}}
-*)
-module Color : sig
+    {- C. Brewer. {{:http://www.colorbrewer.org}www.colorbrewer.org}, 2002.}} *)
+module Colors : sig
 
   (** {1:sequential Sequential color schemes} 
 
       Sequential color schemes are for ordered scalar data. *)
 
-  val seq : ?w:float -> ?s:float -> ?b:float -> ?c:float -> h:float ->  
+  val seq : ?w:float -> ?s:float -> ?b:float -> ?c:float -> h:float -> unit ->
     (float -> Gg.color)
-  (** [seq w s b c h] is a function mapping the unit interval \[[0;1]\]
+  (** [seq w s b c h ()] is a function mapping the unit interval \[[0;1]\]
       to colors with a continuous sequential scheme where [0] is 
       the darkest color and [1] the lightest. The parameters are:
       {ul
       {- [h] in \[[0;2pi]\] the main hue, the overall color.}
       {- [w] in \[[0;1]\] is the hue warmth for a multi-hue scheme, 
-         defaults to [0] (single-hue scheme).}
+         defaults to [0] (single-hue scheme). Augmenting [w] adds
+         yellow which makes the scheme warmer.}
       {- [s] in \[[0;1]\] is saturation, the overall colorfullness, 
          defaults to [0.6].}
       {- [b] in \[[0;1]\] is brightness, the overall lightness, defaults to 
          [0.75].}
       {- [c] in \[[0;1]\] is contrast, the lightness difference
          between the darkest and the ligthest colors of the scheme, 
-         defaults to [0.88].}} *)
+         defaults to [0.88].}} 
+
+      {b Note.} For equal [b], [c] and [w = 0], sequential schemes
+      with different hues [h] have the same lightness. This can be
+      used to generate multiple sequential schemes for multivariate
+      data. *)
 
   val seq_d : ?w:float -> ?s:float -> ?b:float -> ?c:float -> h:float ->  
     int -> Gg.color array
@@ -63,25 +67,26 @@ module Color : sig
       defined midpoint (e.g. zero or the data average). *)
 
   val div : ?w:float -> ?s:float -> ?b:float -> ?c:float -> ?m:float -> 
-    h0:float -> h1:float -> (float -> Gg.color)
-  (** [div w s b c m h0 h1] is a function mapping the unit interval 
+    h0:float -> h1:float -> unit -> (float -> Gg.color)
+  (** [div w s b c m h0 h1 ()] is a function mapping the unit interval 
       \[[0;1]\] to colors for a continuous diverging scheme with [0] returning
       the darkest color of [h0], and [1] the darkest color of [h1].
       {ul
-      {- [m] is the mid point position, defaults to [0.5].}
       {- [h0] in \[[0;2pi]\] is the hue, the overall color for lower values.}
       {- [h1] in \[[0;2pi]\] is the hue, the overall color for higher values.}
       {- [w] in \[[0;1]\] is the hue warmth for a multi-hue scheme, 
-         defaults to [0] (single-hue scheme).}
+         defaults to [0] (single-hue scheme). Augmenting [w] adds
+         yellow which makes the scheme warmer.}
       {- [s] in \[[0;1]\] is saturation, the overall colorfullness, 
          defaults to [0.6].}
       {- [b] in \[[0;1]\] is brightness, the overall lightness, defaults to 
          [0.75].}
       {- [c] in \[[0;1]\] is contrast, the lightness difference
          between the darkest and the ligthest colors of the scheme, 
-         defaults to [0.88].}} *)
+         defaults to [0.88].}
+      {- [m] is the mid point position, defaults to [0.5].}} *)
 
-  val div_d : ?w:float -> ?s:float -> ?b:float -> ?c:float -> ?m:Gg.color -> 
+  val div_d : ?w:float -> ?s:float -> ?b:float -> ?c:float -> ?m:float -> 
     h0:float -> h1:float -> int -> Gg.color array
   (** [div_d w s b c m h0 h1 n] is like {!div} except it returns 
       a discrete diverging scheme with [n] colors and [c] defaults 
@@ -93,15 +98,10 @@ module Color : sig
       nominal) data. *)
 
   type qual_fixed = 
-    [ `Brewer_accent_8 
-    | `Brewer_dark2_8 
-    | `Brewer_paired_12 
-    | `Brewer_pastel1_8 
-    | `Brewer_pastel2_8 
-    | `Brewer_set1_9
-    | `Brewer_set2_8 
-    | `Brewer_set3_12 
-    | `Wijffelaars_17 ]
+    [ `Brewer_accent_8 | `Brewer_dark2_8 | `Brewer_paired_12 
+    | `Brewer_pastel1_9 | `Brewer_pastel2_8 | `Brewer_set1_9 
+    | `Brewer_set2_8 | `Brewer_set3_12 | `Wijffelaars_17 ]
+
   (** The type for qualitative color scheme with fixed colors. The
       suffix indicates the maximal number of colors in the scheme. *)
 
@@ -119,10 +119,10 @@ module Color : sig
     int -> Gg.color array
   (** [qual_d eps r s b c n] is a qualitative scheme with [n] colors. The
       parameters are:
-        {ul
+      {ul
       {- [eps] in \[[0;1]\] is the hue shift, defines where the range of hues 
-         begin, defaults to [0].}
-      {- [r] in \[[0;1]\] is the used hue range, defaults to [1].}
+         begin, defaults to [0] (yellow).}
+      {- [r] in \[[0;1]\] is the used hue range proportion, defaults to [1].}
       {- [s] in \[[0;1]\] is saturation, the overall colorfullness, 
          defaults to [0.5].}
       {- [b] in \[[0;1]\] is brightness, the overall lightness, defaults to 
