@@ -12,10 +12,11 @@ action ()
       default)      $OCAMLBUILD vz.cmx ;;
       tests)        $OCAMLBUILD test.native;;
       colors)       shift; devel/jsoo-build $* test/colors.ml ;;
+      iris)         shift; devel/jsoo-build $* test/iris.ml ;;
       doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
       api-doc)      shift; devel/pkg-doc $* doc/api.docdir ;;
       distrib)      devel/pkg-distrib ;;
-      publish)      devel/pkg-www ;;
+      publish)      devel/pkg-www-release ;;
       publish-opam) devel/pkg-opam ;;
       clean)        $OCAMLBUILD -clean ;;
       jsoo)         shift; devel/jsoo-build $* ;;
