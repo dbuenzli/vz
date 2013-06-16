@@ -23,6 +23,199 @@ open Vg
 let err_scheme_size ssize s = 
   Printf.sprintf "scheme size %d exceeded (%d)" ssize s
 
+(* Sample statistics *)
+
+type ('a, 'b) stat = 
+  { value : unit -> 'b;
+    add : ('a, 'b) stat -> 'a -> ('a, 'b) stat; }
+
+module Stat = struct
+
+  (* Statistics *) 
+
+  type ('a, 'b) t = ('a, 'b) stat      
+  let add s v = s.add s v
+  let add_flip v s = s.add s v
+  let value s = s.value () 
+
+  (* Primitive statistics *)
+
+  let fcmp : float -> float -> int = Pervasives.compare
+  let count =          
+    let value s = 0. in
+    let add s _ = 
+      let count = s.value () in
+      { s with value = fun () -> count +. 1. } 
+    in
+    { value; add }  
+                  
+  let min f =
+    let value () = max_float in
+    let add s v = 
+      let v = f v in
+      if fcmp v (s.value ()) < 0 then { s with value = fun () -> v } else s
+    in
+    { value; add }
+    
+  let max f =
+    let value () = -. max_float in
+    let add s v =
+      let v = f v in
+      if fcmp v (s.value ()) > 0 then { s with value = fun () -> v } else s
+    in
+    { value; add }
+    
+  let range f =
+    let value () = max_float, -. max_float in
+    let add s v = 
+      let v = f v in 
+      let min, max = s.value () in 
+      let min', u1 = if fcmp v min < 0 then v, true else min, false in
+      let max', u2 = if fcmp v max > 0 then v, true else min, false in
+      if u1 || u2 then { s with value = fun () -> min', max' } else s
+    in
+    { value; add }
+    
+  let range_d (type e) ?(cmp = (Pervasives.compare : e -> e -> int)) f = 
+    let module S = Set.Make(struct type t = e let compare = cmp end) in 
+    let value () = [] in
+    let rec add set s v = 
+      let v = f v in 
+      if S.mem v set then s else
+      let set' = S.add v set in 
+      { value = (fun () -> S.elements set'); add = (add set')  }
+    in
+    { value; add = add S.empty }
+
+  let sum ?(nan = false) f =
+    let value () = 0. in 
+    let add s v =
+      let v = f v in
+      if not nan && Float.is_nan v then s else 
+      let sum = s.value () +. v in
+      { s with value = fun () -> sum }
+    in 
+    { value; add } 
+
+  (* For calculating mean and variance we use Welford's algorithm, see
+     the AOCP vol. 2. and http://dx.doi.org/10.2307/1266577 *)
+
+  let mean ?(nan = false) f =
+    let value () = 0. in 
+    let rec add i s v = 
+      let v = f v in
+      if not nan && Float.is_nan v then s else 
+      let m = s.value () in
+      let i' = i +. 1. in 
+      let m' = m +. (v -. m) /. i' in
+      { value = (fun () -> m'); add = add i' }
+    in
+    { value; add = add 0. }
+      
+  let mean_var ?(nan = false) ?(pop = false) f = 
+    let value () = 0., 0. in 
+    let rec add i m s stat v = 
+      let v = f v in
+      if not nan && Float.is_nan v then stat else 
+      let delta = v -. m in 
+      let i' = i +. 1. in 
+      let m' = m +. (delta /. i') in 
+      let s' = s +. delta *. (v -. m') in 
+      { value = (fun () -> m', s' /. (if pop then i' else i' -. 1.));
+        add = add i' m' s'; }
+    in
+    { value; add = add 0. 0. 0. }
+    
+  let median ?(sorted = true) f = failwith "TODO"
+  let quantile ?(sorted = true) p f = failwith "TODO"
+  let fold f acc = 
+    let value () = acc in 
+    let add s v = 
+      let acc' = f (s.value ()) v in 
+      { s with value = fun () -> acc' } 
+    in
+    { value; add }
+
+  (* Higher-order statistics *)
+
+  let list l =
+    let value () = List.map (fun s -> s.value ()) l in 
+    let rec add l s v = 
+      let l' = List.map (fun s -> s.add s v) l in 
+      { add = add l'; value = fun () -> List.map (fun s -> s.value ()) l' }
+    in
+    { value; add = add l } 
+
+  let t2 s1 s2 =
+    let value () = s1.value (), s2.value () in 
+    let rec add s1 s2 s v = 
+      let s1' = s1.add s1 v in 
+      let s2' = s2.add s2 v in 
+      { add = add s1' s2'; value = fun () -> s1'.value (), s2'.value () }
+    in
+    { value; add = add s1 s2 }
+
+  let t3 s1 s2 s3 =
+    let value () = s1.value (), s2.value (), s3.value () in 
+    let rec add s1 s2 s3 s v = 
+      let s1' = s1.add s1 v in 
+      let s2' = s2.add s2 v in 
+      let s3' = s3.add s3 v in 
+      { add = add s1' s2' s3'; 
+        value = fun () -> s1'.value (), s2'.value (), s3'.value () }
+    in
+    { value; add = add s1 s2 s3 }    
+
+  let t4 s1 s2 s3 s4 =
+    let value () = s1.value (), s2.value (), s3.value (), s4.value () in 
+    let rec add s1 s2 s3 s4 s v = 
+      let s1' = s1.add s1 v in 
+      let s2' = s2.add s2 v in 
+      let s3' = s3.add s3 v in 
+      let s4' = s4.add s4 v in 
+      { add = add s1' s2' s3' s4'; 
+        value = fun () -> s1'.value (), s2'.value (), s3'.value (), 
+                         s4'.value (); }
+    in
+    { value; add = add s1 s2 s3 s4 }    
+
+  let t5 s1 s2 s3 s4 s5 =
+    let value () = s1.value (), s2.value (), s3.value (), s4.value (), 
+                   s5.value () 
+    in 
+    let rec add s1 s2 s3 s4 s5 s v = 
+      let s1' = s1.add s1 v in 
+      let s2' = s2.add s2 v in 
+      let s3' = s3.add s3 v in 
+      let s4' = s4.add s4 v in 
+      let s5' = s5.add s5 v in 
+      { add = add s1' s2' s3' s4' s5'; 
+        value = fun () -> s1'.value (), s2'.value (), s3'.value (), 
+                         s4'.value (), s5'.value ()}
+    in
+    { value; add = add s1 s2 s3 s4 s5 }    
+end
+
+
+module Scale = struct
+
+  type exts = float * float 
+
+  (** {1 Linear scales} *)
+
+  type lin
+  (** The type for linear scales. Linear scales maps *)
+
+  let lin ~dom ~range = failwith "TODO"
+  let l_map ?(clamp = false) = failwith "TODO"
+end
+
+
+module Path = struct
+  let circle ?(c = P2.o) r = P.empty >> P.circle c r 
+end
+
+
 module Colors = struct
 
   let r_lch_uv_c = 179.0413773582776
@@ -46,7 +239,7 @@ module Colors = struct
     r
 
   (* Hue functions *)
-
+      
   let mod_hue h = 
     let h = mod_float h Float.two_pi in 
     if h < 0. then h +. Float.two_pi else h

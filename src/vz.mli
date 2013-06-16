@@ -4,14 +4,169 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(** Visualize data with [Vg]. 
+(** Declarative data visualization with [Vg]. 
 
     [Vz] helps you to map data to [Vg] images. 
+
+
+    Open the module to use it, this defines only modules
+    and types in your scope.
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
 open Gg
 open Vg
+
+(** {1:sum Sample statistics and scales} *)
+
+type ('a, 'b) stat 
+(** The type for a statistic of type ['b] on sample data of type ['a]. *)
+
+(** Sample statistics.
+
+    [Stat] summarizes sample data with statistics. *)
+module Stat : sig
+
+  (** {1:sum Statistics} *)
+
+  type ('a, 'b) t = ('a, 'b) stat
+  (** The type for a statistic of type ['b] on sample data of type ['a]. *)
+
+  val add : ('a, 'b) stat -> 'a -> ('a, 'b) stat 
+  (** [add s v] is the statistic [s] with value [v] added to the sample data. *)
+
+  val add_flip : 'a -> ('a, 'b) stat -> ('a, 'b) stat 
+  (** [add_flip v s] is [add s v]. *)
+
+  val value : ('a, 'b) stat -> 'b 
+  (** [value s] is the value of statistic [s]. *)
+
+  (** {1:prim Primitive statistics} *)
+
+  val count : ('a, float) stat 
+  (** [count s] is the {e integral} number of values in the sample. *)
+
+  val min : ('a -> float) -> ('a, float) stat
+  (** [min f] is the minimum value of [f] on the sample data. *) 
+
+  val max : ('a -> float) -> ('a, float) stat
+  (** [max f] is the maximum value of [f] on the sample data. *)
+
+  val range : ('a -> float) -> ('a, float * float) stat
+  (** [range f] is the range of [f] on the sample data, equivalent
+      to [t2 (min f) (max f)]. *)
+
+  val range_d : ?cmp:('b -> 'b -> int) -> ('a -> 'b) -> ('a, 'b list) stat
+  (** [range_d cmp f] is the discrete range of [f], the {e set} of 
+      values returned by [f] on the sample data. [cmp] is used
+      to compare the values (defaults to [Pervasives.compare]). *)
+
+  val sum : ?nan:bool -> ('a -> float) -> ('a, float) stat
+  (** [sum nan f] is the sum of the values returned by [f] on the
+      sample data. If [nan] is [false] (default), [nan] values are
+      ignored. *)
+
+  val mean : ?nan:bool -> ('a -> float) -> ('a, float) stat
+  (** [mean nan f] is the mean of the values returned by [f] on the sample 
+      data. If [nan] is [false] (default), [nan] values are ignored. *)
+
+  val mean_var : ?nan:bool -> ?pop:bool -> ('a -> float) -> 
+    ('a, float * float) stat 
+  (** [mean_var nan pop f] is the mean and {e unbiased}
+     {{:http://mathworld.wolfram.com/SampleVariance.html}sample
+     variance} of the values returned by [f] on the sample data.  If
+     [pop] is [true] (defaults to [false]), the population variance
+     ({e biased} sample variance) is computed.  If [nan] is [false]
+     (default), [nan] samples are ignored.  *)
+
+(* TODO
+
+  val median : ?sorted:bool -> ?count:int -> ('a -> float) -> ('a, float) stat
+  (** [median sorted f] is the median of the values of [f] on the samples.
+      If [sorted] is [true] (default to [false]) the samples are assumed
+      to be sorted.
+
+      {b Warning}. This bufferizes the results of [f] if  *)
+
+  val quantile : ?sorted:bool -> float -> ('a -> float) -> ('a, float) stat
+  (** [quantile sort p f] is the [p]-quantile of [f] on the samples. 
+      If [sort] is [false] (defaults) the samples are assumed to be sorted. *)
+
+*)
+
+  val fold : ('b -> 'a -> 'b) -> 'b -> ('a, 'b) stat 
+  (** [fold f acc] is [f] folded on the the sample data starting with 
+      [acc]. *)
+      
+  (** {1 Higher-order statistics} *) 
+
+  val list : ('a, 'b) stat list -> ('a, 'b list) t
+  (** [list l] is the combined statistics of [l] on the sample data. *)
+
+  val t2 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'b * 'c) stat 
+  (** [t2 s1 s2] is the combined statistics of [s1] and [s2] on the sample
+      data. *)
+
+  val t3 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'd) stat -> 
+    ('a, 'b * 'c * 'd) stat
+  (** [t3 s1 s2 s3] is the combined statistics of [s1], [s2] and [s3]
+      on the sample data. *)
+
+  val t4 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'd) stat -> ('a, 'e) stat ->
+    ('a, 'b * 'c * 'd * 'e) stat
+  (** [t4 s1 s2 s3 s4] is the combined statistics of [s1], [s2], [s3] and 
+      [s4] on the sample data. *)
+
+  val t5 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'd) stat -> ('a, 'e) stat ->
+    ('a, 'f) stat -> ('a, 'b * 'c * 'd * 'e * 'f) stat
+  (** [t5 s1 s2 s3 s4 s5] is the combined statistics of [s1], [s2], [s3], [s4] 
+      and [s5] on the sample data. *)
+end
+
+
+(** Scales 
+
+    [Scales] allow to define scales for sample data in order to map 
+    them to image coordinate. Scales can also be represented
+    as images. *)
+module Scale : sig
+
+  type exts = float * float 
+
+  (** {1 Linear scales} *)
+
+  type lin
+  (** The type for linear scales. Linear scales maps *)
+
+  val lin : dom:float list -> range:float list -> lin
+  val l_map : ?clamp:bool -> lin -> (float -> float)
+(*
+  val l_invert : lin -> lin
+  val l_ticks : ?count:int -> lin -> float list
+  val l_dom : ?nice:bool -> lin -> exts
+  val l_range : lin -> exts
+
+  val l_image : lin -> Vg.image
+
+
+  (** {1 Ordinal scales} *)
+
+  type 'a set = [`A of 'a array | `L of 'a list ] 
+  type ('a, 'b) ord
+  val ord : ?cmp:('a -> 'a -> int) -> 'a list -> 'b list -> ('a, 'b) ord
+  val o_map : ('a, 'b) ord -> ('a -> 'b)
+  val o_dom : ('a, 'b) ord -> 'a list 
+  val o_range : ('a, 'b) ord -> 'b list
+*)
+end
+
+
+(** {1 Image helpers} *) 
+
+module Path : sig
+  val circle : ?c:v2 -> float -> Vg.path
+end
+
 
 (** {1 Map data to colors} *)
 
@@ -19,7 +174,7 @@ open Vg
 
     [Colors] provides functions to generate continuous and discrete
     color schemes to map quantitative or qualitative data to colors.
-
+    
     {b References.}
     {ul 
     {- M. Wijffelaars et al. 
