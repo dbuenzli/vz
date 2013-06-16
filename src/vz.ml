@@ -71,7 +71,7 @@ module Stat = struct
       let v = f v in 
       let min, max = s.value () in 
       let min', u1 = if fcmp v min < 0 then v, true else min, false in
-      let max', u2 = if fcmp v max > 0 then v, true else min, false in
+      let max', u2 = if fcmp v max > 0 then v, true else max, false in
       if u1 || u2 then { s with value = fun () -> min', max' } else s
     in
     { value; add }
