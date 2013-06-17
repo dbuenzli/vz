@@ -17,23 +17,23 @@
 open Gg
 open Vg
 
-(** {1:sum Sample statistics and scales} *)
+(** {1:sum Statistics} *)
 
 type ('a, 'b) stat 
-(** The type for a statistic of type ['b] on sample data of type ['a]. *)
+(** The type for a statistic of type ['b] on data values of type ['a]. *)
 
-(** Sample statistics.
+(** Data statistics.
 
-    [Stat] summarizes sample data with statistics. *)
+    [Stat] summarizes data with statistics. *)
 module Stat : sig
 
   (** {1:sum Statistics} *)
 
   type ('a, 'b) t = ('a, 'b) stat
-  (** The type for a statistic of type ['b] on sample data of type ['a]. *)
+  (** The type for a statistic of type ['b] on data of type ['a]. *)
 
   val add : ('a, 'b) stat -> 'a -> ('a, 'b) stat 
-  (** [add s v] is the statistic [s] with value [v] added to the sample data. *)
+  (** [add s v] is the statistic [s] with value [v] added to the data. *)
 
   val add_flip : 'a -> ('a, 'b) stat -> ('a, 'b) stat 
   (** [add_flip v s] is [add s v]. *)
@@ -44,30 +44,30 @@ module Stat : sig
   (** {1:prim Primitive statistics} *)
 
   val count : ('a, float) stat 
-  (** [count s] is the {e integral} number of values in the sample. *)
+  (** [count s] is the {e integral} number of values in the data. *)
 
   val min : ('a -> float) -> ('a, float) stat
-  (** [min f] is the minimum value of [f] on the sample data. *) 
+  (** [min f] is the minimum value of [f] on the data. *) 
 
   val max : ('a -> float) -> ('a, float) stat
-  (** [max f] is the maximum value of [f] on the sample data. *)
+  (** [max f] is the maximum value of [f] on the data. *)
 
   val range : ('a -> float) -> ('a, float * float) stat
-  (** [range f] is the range of [f] on the sample data, equivalent
+  (** [range f] is the range of [f] on the data, equivalent
       to [t2 (min f) (max f)]. *)
 
   val range_d : ?cmp:('b -> 'b -> int) -> ('a -> 'b) -> ('a, 'b list) stat
   (** [range_d cmp f] is the discrete range of [f], the {e set} of 
-      values returned by [f] on the sample data. [cmp] is used
+      values returned by [f] on the data. [cmp] is used
       to compare the values (defaults to [Pervasives.compare]). *)
 
   val sum : ?nan:bool -> ('a -> float) -> ('a, float) stat
   (** [sum nan f] is the sum of the values returned by [f] on the
-      sample data. If [nan] is [false] (default), [nan] values are
+      data. If [nan] is [false] (default), [nan] values are
       ignored. *)
 
   val mean : ?nan:bool -> ('a -> float) -> ('a, float) stat
-  (** [mean nan f] is the mean of the values returned by [f] on the sample 
+  (** [mean nan f] is the mean of the values returned by [f] on the
       data. If [nan] is [false] (default), [nan] values are ignored. *)
 
   val mean_var : ?nan:bool -> ?pop:bool -> ('a -> float) -> 
@@ -77,56 +77,56 @@ module Stat : sig
      variance} of the values returned by [f] on the sample data.  If
      [pop] is [true] (defaults to [false]), the population variance
      ({e biased} sample variance) is computed.  If [nan] is [false]
-     (default), [nan] samples are ignored.  *)
+     (default), [nan] values are ignored.  *)
 
 (* TODO
 
   val median : ?sorted:bool -> ?count:int -> ('a -> float) -> ('a, float) stat
-  (** [median sorted f] is the median of the values of [f] on the samples.
-      If [sorted] is [true] (default to [false]) the samples are assumed
+  (** [median sorted f] is the median of the values of [f] on the data.
+      If [sorted] is [true] (default to [false]) the values are assumed
       to be sorted.
 
       {b Warning}. This bufferizes the results of [f] if  *)
 
   val quantile : ?sorted:bool -> float -> ('a -> float) -> ('a, float) stat
-  (** [quantile sort p f] is the [p]-quantile of [f] on the samples. 
-      If [sort] is [false] (defaults) the samples are assumed to be sorted. *)
+  (** [quantile sort p f] is the [p]-quantile of [f] on the data. 
+      If [sort] is [false] (defaults) the values are assumed to be sorted. *)
 
 *)
 
   val fold : ('b -> 'a -> 'b) -> 'b -> ('a, 'b) stat 
-  (** [fold f acc] is [f] folded on the the sample data starting with 
+  (** [fold f acc] is [f] folded on the the data starting with 
       [acc]. *)
       
   (** {1 Higher-order statistics} *) 
 
   val list : ('a, 'b) stat list -> ('a, 'b list) t
-  (** [list l] is the combined statistics of [l] on the sample data. *)
+  (** [list l] is the combined statistics of [l] on the data. *)
 
   val t2 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'b * 'c) stat 
-  (** [t2 s1 s2] is the combined statistics of [s1] and [s2] on the sample
-      data. *)
+  (** [t2 s1 s2] is the combined statistics of [s1] and [s2] on the data. *)
 
   val t3 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'd) stat -> 
     ('a, 'b * 'c * 'd) stat
   (** [t3 s1 s2 s3] is the combined statistics of [s1], [s2] and [s3]
-      on the sample data. *)
+      on the data. *)
 
   val t4 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'd) stat -> ('a, 'e) stat ->
     ('a, 'b * 'c * 'd * 'e) stat
   (** [t4 s1 s2 s3 s4] is the combined statistics of [s1], [s2], [s3] and 
-      [s4] on the sample data. *)
+      [s4] on the data. *)
 
   val t5 : ('a , 'b) stat -> ('a, 'c) stat -> ('a, 'd) stat -> ('a, 'e) stat ->
     ('a, 'f) stat -> ('a, 'b * 'c * 'd * 'e * 'f) stat
   (** [t5 s1 s2 s3 s4 s5] is the combined statistics of [s1], [s2], [s3], [s4] 
-      and [s5] on the sample data. *)
+      and [s5] on the data. *)
 end
 
+(** {1:scales Scales} *)
 
 (** Scales 
 
-    [Scales] allow to define scales for sample data in order to map 
+    [Scales] allow to define scales for data in order to map 
     them to image coordinate. Scales can also be represented
     as images. *)
 module Scale : sig
@@ -167,8 +167,7 @@ module Path : sig
   val circle : ?c:v2 -> float -> Vg.path
 end
 
-
-(** {1 Map data to colors} *)
+(** {1 Colors schemes} *)
 
 (** Color schemes. 
 
