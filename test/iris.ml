@@ -19,33 +19,45 @@ let log fmt =
   let flush _ = Firebug.console ## log (flush ()) in
   Format.kfprintf flush Format.str_formatter fmt
 
-let scatter ~size ~width ~pad ~x:(x, xdom) ~y:(y, ydom) ~color rows =
+let xyset x y = (* indexed X x Y *)
+  let xs xi x = List.mapi (fun yi y -> ((float xi), x), ((float yi), x)) y in
+  List.concat (List.mapi xs x)
+
+let xyplot ~pad ~size ~x:((xl, x), xdom) ~y:((yl, y), ydom) ~color data =
   let range = [ 0.5 *. pad; size -. 0.5 *. pad ] in
   let x = Scale.l_map (Scale.lin ~dom:xdom ~range:range) in
   let y = Scale.l_map (Scale.lin ~dom:ydom ~range:range) in
   let mark = Vz.Path.circle 3. in
-  let dot r = I.const (color r) >> I.cut mark >> I.move (V2.v (x r) (y r)) in
+  let dot v = I.const (color v) >> I.cut mark >> I.move (V2.v (x v) (y v)) in
   let blend_dot acc r = acc >> I.blend (dot r) in 
-  List.fold_left blend_dot I.void rows
+  List.fold_left blend_dot I.void data
 
-let species_col = "species", (fun (_, _, _, _, s) -> s)
-let feature_cols = 
+let specie = "species", (fun (_, _, _, _, s) -> s)
+let traits = 
   [ "sepal length (cm)", (fun (l, _, _, _, _) -> l);
     "sepal width (cm)",  (fun (_, w, _, _, _) -> w);
     "petal length (cm)", (fun (_, _, l, _, _) -> l);
     "petal width (cm)",  (fun (_, _, _, w, _) -> w); ]  
 
 let stats data = 
-  let ranges = List.map (fun c -> Stat.range (snd c)) feature_cols in
-  let species = Stat.range_d (snd species_col) in
-  let stats = Stat.t2 (Stat.list ranges) species in 
+  let trait_ranges = List.map (fun col -> Stat.range (snd col)) traits in
+  let species = Stat.range_d (snd specie) in
+  let stats = Stat.t2 (Stat.list trait_ranges) species in 
   Stat.value (List.fold_left Stat.add stats data)
   
 let image = 
-  let ranges, species = stat Iris_data.sample in
-  List.iter (fun s -> log "%s" s) species; 
-  ignore (ranges, species);
-  I.const (Color.v 0.314 0.784 0.471 1.)  
+  let size = 35. in
+  let pad = 5. in
+  let trait_ranges, species = stats Iris_data.sample in
+  let traits = List.combine traits trait_ranges in 
+  let xys = xyset traits traits in
+  let add_xy acc ((xi, x), (yi, y)) = 
+    let m = V2.v (xi *. size) (yi *. size) in
+    I.void
+(*
+    acc I.blend ((xyplot ~pad ~size ~x ~y) >> I.move m) *)
+  in
+  List.fold_left add_xy I.void xys
 
 (* Browser bureaucracy. *)
 

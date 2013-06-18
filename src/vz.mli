@@ -186,9 +186,9 @@ module Colors : sig
 
       Sequential color schemes are for ordered scalar data. *)
 
-  val seq : ?w:float -> ?s:float -> ?b:float -> ?c:float -> h:float -> unit ->
-    (float -> Gg.color)
-  (** [seq w s b c h ()] is a function mapping the unit interval \[[0;1]\]
+  val seq : ?a:float -> ?w:float -> ?s:float -> ?b:float -> ?c:float -> 
+    h:float -> unit -> (float -> Gg.color)
+  (** [seq a w s b c h ()] is a function mapping the unit interval \[[0;1]\]
       to colors with a continuous sequential scheme where [0] is 
       the darkest color and [1] the lightest. The parameters are:
       {ul
@@ -202,16 +202,17 @@ module Colors : sig
          [0.75].}
       {- [c] in \[[0;1]\] is contrast, the lightness difference
          between the darkest and the ligthest colors of the scheme, 
-         defaults to [0.88].}} 
+         defaults to [0.88].}
+      {- [a] is the alpha component, defaults to [1.].}}
 
       {b Note.} For equal [b], [c] and [w = 0], sequential schemes
       with different hues [h] have the same lightness. This can be
       used to generate multiple sequential schemes for multivariate
       data. *)
 
-  val seq_d : ?w:float -> ?s:float -> ?b:float -> ?c:float -> h:float ->  
-    int -> Gg.color array
-  (** [seq_d w s b c h n] is like {!seq} except it
+  val seq_d : ?a:float -> ?w:float -> ?s:float -> ?b:float -> ?c:float -> 
+    h:float ->  int -> Gg.color array
+  (** [seq_d a w s b c h n] is like {!seq} except it
       returns a discrete sequential scheme with [n] colors and
       [c] defaults to [min 0.88 (0.34 +. 0.06. * n)]. *)
 
@@ -220,9 +221,9 @@ module Colors : sig
       Diverging color schemes are for ordered scalar data with a
       defined midpoint (e.g. zero or the data average). *)
 
-  val div : ?w:float -> ?s:float -> ?b:float -> ?c:float -> ?m:float -> 
-    h0:float -> h1:float -> unit -> (float -> Gg.color)
-  (** [div w s b c m h0 h1 ()] is a function mapping the unit interval 
+  val div : ?a:float -> ?w:float -> ?s:float -> ?b:float -> ?c:float -> 
+    ?m:float -> h0:float -> h1:float -> unit -> (float -> Gg.color)
+  (** [div a w s b c m h0 h1 ()] is a function mapping the unit interval 
       \[[0;1]\] to colors for a continuous diverging scheme with [0] returning
       the darkest color of [h0], and [1] the darkest color of [h1].
       {ul
@@ -238,11 +239,12 @@ module Colors : sig
       {- [c] in \[[0;1]\] is contrast, the lightness difference
          between the darkest and the ligthest colors of the scheme, 
          defaults to [0.88].}
-      {- [m] is the mid point position, defaults to [0.5].}} *)
+      {- [m] is the mid point position, defaults to [0.5].}
+      {- [a] is the alpha component, defaults to [1.].}} *)
 
-  val div_d : ?w:float -> ?s:float -> ?b:float -> ?c:float -> ?m:float -> 
-    h0:float -> h1:float -> int -> Gg.color array
-  (** [div_d w s b c m h0 h1 n] is like {!div} except it returns 
+  val div_d : ?a:float -> ?w:float -> ?s:float -> ?b:float -> ?c:float -> 
+    ?m:float -> h0:float -> h1:float -> int -> Gg.color array
+  (** [div_d a w s b c m h0 h1 n] is like {!div} except it returns 
       a discrete diverging scheme with [n] colors and [c] defaults 
       to [min 0.88 (1.0 - 0.06 *. (11 - ((n / 2) + 1)))]. *)
 
@@ -262,15 +264,16 @@ module Colors : sig
   val qual_fixed_size : qual_fixed -> int 
   (** [qual_fixed_size q] is the maximal number of colors in [qf]. *)
 
-  val qual_fixed : ?size:int -> qual_fixed -> Gg.color array
+  val qual_fixed : ?a:float -> ?size:int -> qual_fixed -> Gg.color array
   (** [qual_fixed size q] is fixed qualitative color scheme [q]
-      with [size] colors (defaults to [qual_fixed_size q]).
+      with [size] colors (defaults to [qual_fixed_size q]) and alpha 
+      component [a] (defaults to [1]). 
 
       @raise Invalid_argument if [size] is greater than 
       [qual_fixed_size b]. *)
 
-  val qual_d : ?eps:float -> ?r:float -> ?s:float -> ?b:float -> ?c:float -> 
-    int -> Gg.color array
+  val qual_d : ?a:float -> ?eps:float -> ?r:float -> ?s:float -> ?b:float -> 
+    ?c:float -> int -> Gg.color array
   (** [qual_d eps r s b c n] is a qualitative scheme with [n] colors. The
       parameters are:
       {ul
@@ -283,7 +286,8 @@ module Colors : sig
          [1].}
       {- [c] in \[[0;1]\] is contrast, the lightness difference
          between the darkest and the ligthest colors of the scheme, 
-         defaults to [0.5].}} *)
+         defaults to [0.5].}
+      {- [a] is the alpha component, defaults to [1.].}} *)
 end
 
 (*---------------------------------------------------------------------------

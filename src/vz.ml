@@ -223,7 +223,7 @@ module Colors = struct
 
   (* Quadratic interpolation *)
     
-  let quad b0 b1 b2 t = 
+  let quad a b0 b1 b2 t = 
     let omt = 1. -. t in 
     let c0 = omt *. omt in 
     let c1 = 2. *. omt *. t in 
@@ -231,7 +231,7 @@ module Colors = struct
     V3.(V4.v ((c0 *. (x b0)) +. (c1 *. (x b1)) +. (c2 *. (x b2)))
              ((c0 *. (y b0)) +. (c1 *. (y b1)) +. (c2 *. (y b2)))
              ((c0 *. (z b0)) +. (c1 *. (z b1)) +. (c2 *. (z b2)))
-             1.)
+             a)
 
   let inv_quad b0 b1 b2 v =
     let c = b0 -. (2. *. b1) +. b2 in 
@@ -285,7 +285,7 @@ module Colors = struct
     let rv = -. (coeff (M3.col t rgb2xyz)) /. (coeff (M3.col r rgb2xyz)) in
     let a = [|0.; 0.; 0.|] in
     a.(r) <- rv; a.(s) <- 0.; a.(t) <- 1.;
-    match a with [|r; g; b|] -> Color.v_l r g b 1.0 | _ -> assert false 
+    match a with [|r; g; b|] -> Color.v r g b 1.0 | _ -> assert false 
   
   (* Saturation functions. *)
 
@@ -305,7 +305,7 @@ module Colors = struct
     let p2s = min (max_s p2l p2h) (w *. s *. V3.y pb) in 
     V3.v p2l p2s p2h    
 
-  let seq ?(w = 0.) ?(s = 0.6) ?(b = 0.75) ?(c = 0.88) ~h () = 
+  let seq ?(a = 1.) ?(w = 0.) ?(s = 0.6) ?(b = 0.75) ?(c = 0.88) ~h () = 
     let p0 = V3.v 0. 0. h in
     let p1 = V3.of_v4 (Color.to_lch_uv (msc h)) in 
     let p2 = if w > 0. then p2_multi_hue w s h else V3.v 100. 0. h in
@@ -327,26 +327,27 @@ module Colors = struct
       in
       let cseq t = 
         if t <= 0.5 
-        then quad p0 q0 q1 (2. *. t) 
-        else quad q1 q2 p2 (2. *. (t -. 0.5))
+        then quad a p0 q0 q1 (2. *. t) 
+        else quad a q1 q2 p2 (2. *. (t -. 0.5))
       in
       Color.clamp (Color.of_lch_uv (cseq (t_ (l t))))
         
-  let seq_d ?w ?s ?b ?c ~h n = 
+  let seq_d ?a ?w ?s ?b ?c ~h n = 
     let c = match c with 
     | None -> min 0.88 (0.34 +. (float n) *. 0.06) 
     | Some c -> c 
     in
-    let seq = seq ?w ?s ?b ~c ~h () in 
+    let seq = seq ?a ?w ?s ?b ~c ~h () in 
     let max = float (n - 1) in 
     Array.init n (fun i -> seq ((float i) /. max))
 
   (* Diverging color schemes 
      See Wijffelaars 2008 p. 53 table 1. *)
 
-  let div ?(w = 0.) ?(s = 0.6) ?(b = 0.75) ?(c = 0.88) ?(m = 0.5) ~h0 ~h1 () = 
-    let seq0 = seq ~w ~s ~b ~c ~h:h0 () in 
-    let seq1 = seq ~w ~s ~b ~c ~h:h1 () in
+  let div ?(a = 1.) ?(w = 0.) ?(s = 0.6) ?(b = 0.75) ?(c = 0.88) ?(m = 0.5) 
+      ~h0 ~h1 () = 
+    let seq0 = seq ~a ~w ~s ~b ~c ~h:h0 () in 
+    let seq1 = seq ~a ~w ~s ~b ~c ~h:h1 () in
     let e2 = 2. *. abs_float (m -. 0.5) in
     let t' = 
       if m < 0.5 then (fun t -> (t +. e2) /. (1. +. e2)) else
@@ -361,14 +362,14 @@ module Colors = struct
         let smax = w *. 0.5 *. (V4.y c0 +. V4.y c1) in 
         min (max_s l h) smax
       in
-      Color.of_lch_uv (V4.v l s h 1.) 
+      Color.of_lch_uv (V4.v l s h a) 
     in
     fun t -> 
       let t' = t' t in 
       if Float.equal_tol ~eps:1e-8 t' 0.5 then cm else
       if t' < 0.5 then seq0 (2. *. t') else seq1 (2. *. (1. -. t')) 
 
-  let div_d ?w ?s ?b ?c ?(m = 0.5) ~h0 ~h1 n = 
+  let div_d ?a ?w ?s ?b ?c ?(m = 0.5) ~h0 ~h1 n = 
     let c = match c with 
     | None -> min 0.88 (1.0 -. 0.06 *. (11. -. (float (n / 2 + 1))))
     | Some c -> c
@@ -376,11 +377,11 @@ module Colors = struct
     let m' = floor (2. *. m *. ((float n) -. 1.) +. 0.5) /. 2. in
     if mod_float (2. *. m') 2. = 0. then 
       let max = float (n - 1) in 
-      let div = div ?w ?s ?b ~c ~m:(m' /. max) ~h0 ~h1 () in 
+      let div = div ?a ?w ?s ?b ~c ~m:(m' /. max) ~h0 ~h1 () in 
       Array.init n (fun i -> div ((float i) /. max))
     else
       let max = float n in
-      let div = div ?w ?s ?b ~c ~m:((m' +. 0.5) /. max) ~h0 ~h1 () in 
+      let div = div ?a ?w ?s ?b ~c ~m:((m' +. 0.5) /. max) ~h0 ~h1 () in 
       Array.init n 
         (fun i -> 
            let i = float i in
@@ -400,7 +401,7 @@ module Colors = struct
   | `Brewer_pastel1_9 -> 9 | `Brewer_pastel2_8 -> 8 | `Brewer_set1_9 -> 9 
   | `Brewer_set2_8 -> 8 | `Brewer_set3_12 -> 12 | `Wijffelaars_17 -> 17
 
-  let rgb r g b = Color.of_bytes r g b 1.
+  let rgb = Color.v_srgbi
   let brewer_accent_8 = lazy 
     [| rgb 127 201 127; rgb 190 174 212; rgb 253 192 134; rgb 255 255 153; 
        rgb 56  108 176; rgb 240 2   127; rgb 191 91   23; rgb 102 102 102; |]
@@ -444,7 +445,7 @@ module Colors = struct
        rgb 173  45  92; rgb 227 196 239; rgb 226 212 149; rgb 204 241 255; 
        rgb  87 142  82; |]
 
-  let qual_fixed ?size q = 
+  let qual_fixed ?(a = 1.) ?size q = 
     let qsize = qual_fixed_size q in
     let size = match size with 
     | None -> qsize 
@@ -461,9 +462,11 @@ module Colors = struct
     | `Brewer_set3_12 -> brewer_set3_12
     | `Wijffelaars_17 -> wijffelaars_17 
     in
-    Array.sub (Lazy.force scheme) 0 size
+    let colors = Array.sub (Lazy.force scheme) 0 size in
+    if a = 1. then colors else Array.map (fun c -> Color.with_a c a) colors
+    
 
-  let qual ?(eps = 0.) ?(r = 1.) ?(s = 0.5) ?(b = 1.) ?(c = 0.5) () = 
+  let qual ?(a = 1.) ?(eps = 0.) ?(r = 1.) ?(s = 0.5) ?(b = 1.) ?(c = 0.5) () = 
     fun t ->                                 (* see Wijffelaars 2008, p. 65. *)
       let h = mod_hue ((V3.z y_lch_uv) +. Float.two_pi *. (eps +. t *. r)) in
       let alpha = (diff_hue h (V3.z y_lch_uv)) /. Float.two_pi in
@@ -471,10 +474,10 @@ module Colors = struct
       let l1 = (1. -. c) *. l0 in
       let l = (1. -. alpha) *. l0 +. alpha *. l1 in
       let s = min (max_s l h) (s *. r_lch_uv_c) in
-      Color.clamp (Color.of_lch_uv (V4.v l s h 1.))
+      Color.clamp (Color.of_lch_uv (V4.v l s h a))
       
-  let qual_d ?eps ?r ?s ?b ?c n = 
-    let qual = qual ?eps ?r ?s ?b ?c () in
+  let qual_d ?a ?eps ?r ?s ?b ?c n = 
+    let qual = qual ?a ?eps ?r ?s ?b ?c () in
     let max = float n in
     Array.init n (fun i -> qual ((float i) /. max))      
 end
