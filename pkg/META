@@ -1,0 +1,8 @@
+version = "%%VERSION%%"
+description = "Declarative data visualization for OCaml"
+requires = "gg vg"
+archive(byte) = "vz.cma"
+archive(byte, plugin) = "vz.cma"
+archive(native) = "vz.cmxa"
+archive(native, plugin) = "vz.cmxs"
+exists_if = "vz.cma"

@@ -1,14 +1,10 @@
-<**/*.{ml,mli}> : annot, package(gg), package(vg)
+<**/*.{ml,mli}> : annot
+
+true : package(gg), package(vg)
+
 <src> : include
 <test> : include
 <test/*> : debug
 
-<test/test.{byte,native}> : package(gg), package(vg)
-<test/colors.{mli,ml,byte}> : package(gg), package(vg), package(vg.htmlc), \
-                              package(js_of_ocaml), \
-                              package(js_of_ocaml.syntax), syntax(camlp4o)
-
-<test/iris.{mli,ml,byte}> : package(gg), package(vg), package(vg.htmlc), \
-                            package(js_of_ocaml), \
-                            package(js_of_ocaml.syntax), syntax(camlp4o)
-
+<test/{iris,colors,cam}.{ml,byte}> : package(vg.htmlc) \ 
+  package(js_of_ocaml), package(js_of_ocaml.syntax), syntax(camlp4o)

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Usage: build has_native
+
+set -e 
+LOC=`dirname $0`
+
+. $LOC/pkg-builder
+
+NATIVE=$1
+
+add lib pkg/META		
+add lib src/vz.mli	
+add lib src/vz.cmi
+add lib src/vz.cmx
+add lib src/vz.cma
+add lib src/vz.a
+add lib src/vz.cmxa
+add lib src/vz.cmxs
+
+add doc README.md
+add doc CHANGES.md
+
+build
+install vz

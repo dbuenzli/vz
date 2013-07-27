@@ -124,40 +124,82 @@ end
 
 (** {1:scales Scales} *)
 
-(** Scales 
+type ('a, 'b) scale
+(** The type for scales from values of type ['a] to ['b]. *)
 
-    [Scales] allow to define scales for data in order to map 
-    them to image coordinate. Scales can also be represented
-    as images. *)
+(** Scales.
+
+    [Scale] represent functions mapping domains to ranges.  They help
+    to map dimensions of data to dimensions of visual representations.
+    Scales can also be represented as images. *) 
 module Scale : sig
 
-  type exts = float * float 
+  (** {1 Scales} *)
 
+  type 'a set = [ `Discrete of 'a list | `Interval of 'a list ] 
+  (** The type for representing sets of values. *)
+  
+  type ('a, 'b) t = ('a, 'b) scale
+  (** The type for scales from values of type ['a] to ['b]. *)
+
+  val clamp : ('a, 'b) scale -> bool 
+  (** [clamp s] is [true] if the map of [s] is clamped to the scale
+      domain. *)
+
+  val nice : ('a, 'b) scale -> bool
+  (** [nice s] is [true] if the bounds of [s] are niced. *)
+
+  val dom : ('a, 'b) scale -> 'a set
+  (** [dom s] is the (possibly niced) domain of [s]. *)
+
+  val dom_raw : ('a, 'b) scale -> 'a set
+  (** [dom s] is the unniced domain of [s]. *)
+  
+  val range : ('a, 'b) scale -> 'b set
+  (** [range s] is the range of [s]. *)
+
+  val map : ('a, 'b) scale -> ('a -> 'b)
+  (** [map s] is the mapping function of [s]. *)
+
+  val ticks : ?count:bool -> ('a, 'b) scale -> 'a list
+      
   (** {1 Linear scales} *)
 
-  type lin
   (** The type for linear scales. Linear scales maps *)
 
-  val lin : dom:float list -> range:float list -> lin
-  val l_map : ?clamp:bool -> lin -> (float -> float)
-(*
-  val l_invert : lin -> lin
-  val l_ticks : ?count:int -> lin -> float list
-  val l_dom : ?nice:bool -> lin -> exts
-  val l_range : lin -> exts
+  val linear : ?clamp:bool -> ?nice:bool -> (float * float) -> 
+    (float * float) -> (float, float) scale
+  (** [linear clamp nice dom range] maps the interval [dom] on 
+      the interval [range]. 
+      {ul 
+      {- [clamp] if [false] (default), the scale maps values outside
+         the domain according to the specified linear
+         transformation. If [true] values outside the domain are
+         clamped to the nearest domain bounds.}
+      {- [nice] if [true] the bounds of [dom] are {e expanded} to fall
+         on round numbers. The precision of these round numbers is one
+         order of magnitude less than the extent [d] of the domain that
+         is: 10{^(round (log{_10} d) - 1)}. Default to [false].}}  *)
 
-  val l_image : lin -> Vg.image
-
-
-  (** {1 Ordinal scales} *)
-
-  type 'a set = [`A of 'a array | `L of 'a list ] 
-  type ('a, 'b) ord
-  val ord : ?cmp:('a -> 'a -> int) -> 'a list -> 'b list -> ('a, 'b) ord
-  val o_map : ('a, 'b) ord -> ('a -> 'b)
-  val o_dom : ('a, 'b) ord -> 'a list 
-  val o_range : ('a, 'b) ord -> 'b list
+(* 
+  val linear_p : ?clamp:bool -> ?nice:bool -> float list -> float list -> 
+    (float, float) scale 
+  (** [linear_p clamp nice dom range] maps numbers according to the 
+      piecewise linear function defined by dom and range (which must
+      have the same length). See {!linear}. *)
 *)
+  (** {1 Ordinal scales} 
+
+      Ordinal scales maps a discrete orderable domain to a range. *)
+
+  val ordinal : ?cmp:('a -> 'a -> int) -> 'a list -> 'b list -> ('a, 'b) scale
+  
+
+(** {1 Generating discrete ranges} *)
+
+  val range_pts : ?rpad:float -> min:float -> max:float -> int -> float list
+  val range_bands : ?rpad:float -> ?pad:float -> min:float -> max:float ->
+    int -> float list     
 end
 
 

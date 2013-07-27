@@ -4,22 +4,20 @@
 
 set -e
 
-OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -tag debug -classic-display \
+                          -use-ocamlfind"}
 
 action () 
 {
     case $1 in
       default)      $OCAMLBUILD vz.cmx ;;
       tests)        $OCAMLBUILD test.native;;
-      colors)       shift; devel/jsoo-build $* test/colors.ml ;;
-      iris)         shift; devel/jsoo-build $* test/iris.ml ;;
-      doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
-      api-doc)      shift; devel/pkg-doc $* doc/api.docdir ;;
-      distrib)      devel/pkg-distrib ;;
-      publish)      devel/pkg-www-release ;;
-      publish-opam) devel/pkg-opam ;;
+      colors)       shift; jsoo-build $* test/colors.ml ;;
+      iris)         shift; jsoo-build $* test/iris.ml ;;
+      cam)          shift; jsoo-build $* test/cam.ml ;;
+      doc)          shift; pkg-doc $* doc/dev-api.docdir ;;
       clean)        $OCAMLBUILD -clean ;;
-      jsoo)         shift; devel/jsoo-build $* ;;
+      jsoo)         shift; jsoo-build $* ;;
       *)            $OCAMLBUILD $* ;;
     esac
 } 

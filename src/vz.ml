@@ -20,10 +20,13 @@
 open Gg
 open Vg
 
-let err_scheme_size ssize s = 
-  Printf.sprintf "scheme size %d exceeded (%d)" ssize s
+(* Invalid_arg strings *) 
 
-(* Sample statistics *)
+let str = Printf.sprintf 
+let err_scheme_size ssize s = str "scheme size %d exceeded (%d)" ssize s
+let err_interval (lo, hi) = str "invalid interval: ... %f, %f ..." lo hi
+
+(* Statistics *)
 
 type ('a, 'b) stat = 
   { value : unit -> 'b;
@@ -196,20 +199,98 @@ module Stat = struct
     { value; add = add s1 s2 s3 s4 s5 }    
 end
 
+(* Scale *)
 
 module Scale = struct
 
-  type exts = float * float 
+  type 'a set = [ `Discrete of 'a list | `Interval of 'a list ] 
+  let extents = function 
+  | `Intervals (min :: vs) ->
+      let rec last v acc = function 
+      | [] -> v, acc | v :: vs -> last v (v :: acc) vs 
+      in
+      let max, vs_rev = last min [] vs in 
+      min, max, vs_rev 
+  | `Intervals [] -> assert false
+  | `Discrete _ -> failwith "TODO"
 
-  (** {1 Linear scales} *)
+  type ('a, 'b) t = 
+    { map : 'a -> 'b;
+      dom : 'a set;
+      dom_raw : 'a set;
+      range : 'b set;
+      clamp : bool; 
+      nice : bool; } 
 
-  type lin
-  (** The type for linear scales. Linear scales maps *)
+  let clamp s = s.clamp
+  let nice s = s.nice 
+  let dom s = s.dom
+  let dom_raw s = s.dom_raw
+  let range s = s.range 
+  let map s = s.map
+  let ticks ?count s = failwith "TODO"
 
-  let lin ~dom ~range = failwith "TODO"
-  let l_map ?(clamp = false) = failwith "TODO"
+  let floor_to_step step x = floor (x /. step) *. step
+  let ceil_to_step step x = ceil (x /. step) *. step 
+
+  let nice_interval dom = 
+    let min, max, vs_rev = extents (`Intervals dom) in 
+    let exts = max -. min in
+    let mag = 10. ** (Float.round (log10 exts) -. 1.) in  
+    let min' = floor (min /. mag) *. mag in 
+    let max' = ceil (max /. mag) *. mag in
+    min' :: List.rev (max' :: vs_rev)
+        
+  let check_range r = 
+    let rec loop last = function 
+    | [] -> ()
+    | v :: vs -> 
+        if v < last then invalid_arg (err_interval (last, v)) else loop v vs
+    in
+    loop (-. max_float) r
+
+  let linear_map ~clamp d r = match d, r with 
+  | [dmin; dmax], [rmin; rmax] -> 
+      let di = dmax -. dmin in 
+      let ri = rmax -. rmin in
+      failwith "TODO"
+  | _, _ -> failwith "TODO"
+(*
+      if clamp then 
+      else
+      fun x -> 
+        let t = (t -. dmin) /. d.i in 
+        rmin +. ((
+ 
+      fun x -> 
+        let t = 
+        rmin +. (( t -. dmin) /. di)
+        rmin +. ((x -. 
+  | 
+  *)         
+  let linear ?(clamp = false) ?(nice = false) (dmin, dmax) (rmin, rmax) = 
+    let dom_raw = [ dmin; dmax] in 
+    let range = [ rmin; rmax] in
+    check_range dom_raw; check_range range;
+    let dom = if nice then nice_interval dom_raw else dom_raw in 
+    { map = linear_map ~clamp dom range; 
+      dom = `Interval dom ; dom_raw = `Interval dom_raw; 
+      range = `Interval range; clamp; nice }      
+    
+(* 
+  let linear_p ?(clamp = false) ?(nice = false) dom range = 
+    check_range dom; check_range range;
+    failwith "TODO"
+*)
+
+
+  let ordinal ?(cmp = Pervasives.compare) d r = failwith "TODO"
+
+  let range_pts ?rpad ~min ~max n = failwith "TODO"
+  let range_bands ?rpad ?pad ~min ~max n = failwith "TODO"
 end
 
+type ('a, 'b) scale = ('a, 'b) Scale.t
 
 module Path = struct
   let circle ?(c = P2.o) r = P.empty >> P.circle c r 
