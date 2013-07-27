@@ -6,5 +6,5 @@ true : package(gg), package(vg)
 <test> : include
 <test/*> : debug
 
-<test/{iris,colors,cam}.{ml,byte}> : package(vg.htmlc), \ 
+<test/{iris,colors,cam}.{ml,byte}> : package(vg.htmlc), \
   package(js_of_ocaml), package(js_of_ocaml.syntax), syntax(camlp4o)
