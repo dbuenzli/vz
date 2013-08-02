@@ -8,57 +8,69 @@ open Gg
 open Vg
 open Vz
 
-(* Define your image *)
-
-let aspect = 1.618  
-let size = Size2.v (aspect *. 100.) 100. (* mm *)
-let view = Box2.v P2.o (Size2.v aspect 1.)
-
 let log fmt =
   let flush () = Js.string (Format.flush_str_formatter ()) in
   let flush _ = Firebug.console ## log (flush ()) in
   Format.kfprintf flush Format.str_formatter fmt
 
-let xyset x y = (* indexed X x Y *)
-  let xs xi x = List.mapi (fun yi y -> ((float xi), x), ((float yi), x)) y in
-  List.concat (List.mapi xs x)
-
-let xyplot ~pad ~size ~x:((xl, x), xdom) ~y:((yl, y), ydom) ~color data =
-  let range = [ 0.5 *. pad; size -. 0.5 *. pad ] in
-  let x = Scale.l_map (Scale.lin ~dom:xdom ~range:range) in
-  let y = Scale.l_map (Scale.lin ~dom:ydom ~range:range) in
-  let mark = Vz.Path.circle 3. in
-  let dot v = I.const (color v) >> I.cut mark >> I.move (V2.v (x v) (y v)) in
-  let blend_dot acc r = acc >> I.blend (dot r) in 
-  List.fold_left blend_dot I.void data
-
-let specie = "species", (fun (_, _, _, _, s) -> s)
-let traits = 
+let name = fst
+let getter = snd
+let species = "species", (fun (_, _, _, _, s) -> s)
+let traits = List.rev
   [ "sepal length (cm)", (fun (l, _, _, _, _) -> l);
     "sepal width (cm)",  (fun (_, w, _, _, _) -> w);
     "petal length (cm)", (fun (_, _, l, _, _) -> l);
     "petal width (cm)",  (fun (_, _, _, w, _) -> w); ]  
 
-let stats data = 
-  let trait_ranges = List.map (fun col -> Stat.range (snd col)) traits in
-  let species = Stat.range_d (snd specie) in
+let species_stats data = 
+  let column_range col = Stat.range (getter col) in
+  let trait_ranges = List.map column_range traits in
+  let species = Stat.range_d (getter species) in
   let stats = Stat.t2 (Stat.list trait_ranges) species in 
   Stat.value (List.fold_left Stat.add stats data)
-  
+
+let xyset x y = (* indexed X x Y *)
+  let xs xi x = List.mapi (fun yi y -> ((float xi), x), ((float yi), y)) y in
+  List.concat (List.mapi xs x)
+
+let xyplot ~pad ~size ~x:((xl, x), xdom) ~y:((yl, y), ydom) obj color data =
+  let range = (0.5 *. pad, size -. 0.5 *. pad) in
+  let xmap = Scale.map (Scale.linear xdom range) in
+  let ymap = Scale.map (Scale.linear ydom range) in
+  let x v = xmap (x v) in 
+  let y v = ymap (y v) in
+  let mark = I.cut (Vz.Path.circle 0.5) in
+  let dot v = I.const (color (obj v)) >> mark >> I.move (V2.v (x v) (y v)) in
+  let blend_dot acc r = acc >> I.blend (dot r) in 
+  List.fold_left blend_dot I.void data
+
+let frame pad size = 
+  let o, r = 0.5 *. pad, size -. pad in
+  let bounds = P.empty >> P.rect (Box2.v (P2.v o o) (Size2.v r r)) in
+  let area = `O { P.o with P.width = 0.2; } in
+  I.cut ~area bounds (I.const (Color.gray 0.85))
+
 let image = 
   let size = 35. in
-  let pad = 5. in
-  let trait_ranges, species = stats Iris_data.sample in
-  let traits = List.combine traits trait_ranges in 
-  let xys = xyset traits traits in
+  let pad = 4.5 in
+  let trait_count = List.length traits in
+  let trait_ranges, species_range = species_stats Iris_data.sample in
+  let traits = List.combine traits trait_ranges in
+  let species_count = List.length species_range in
+  let colors = Colors.qual_fixed ~a:0.75 ~size:species_count `Brewer_set2_8 in
+  let cmap = Scale.map (Scale.ordinal species_range (Array.to_list colors)) in
+  let xyset = xyset traits traits in
   let add_xy acc ((xi, x), (yi, y)) = 
-    let m = V2.v (xi *. size) (yi *. size) in
-    I.void
-(*
-    acc I.blend ((xyplot ~pad ~size ~x ~y) >> I.move m) *)
+    let pos = V2.v (xi *. size) (yi *. size) in
+    let plot = xyplot ~pad ~size ~x ~y (getter species) cmap Iris_data.sample in
+    acc >> I.blend (frame pad size >> I.blend plot >> I.move pos)
   in
-  List.fold_left add_xy I.void xys
-
+  let image = List.fold_left add_xy I.void xyset in
+  let side = size *. (float trait_count) +. pad in
+  let view = Box2.v P2.o (Size2.v side side) in 
+  let size = Size2.v 160. 160. (* mm *) in 
+  `Image (size, view, image) 
+  
 (* Browser bureaucracy. *)
 
 let rec main _ = 
@@ -75,7 +87,7 @@ let rec main _ =
     Dom.appendChild a c; c
   in 
   let r = Vgr.create (Vgr_htmlc.target c) `Other in 
-  assert(Vgr.render r (`Image (size, view, image)) = `Ok); 
+  assert(Vgr.render r image = `Ok); 
   a ## href <- (c ## toDataURL ());
   Js._false
 

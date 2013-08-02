@@ -6,8 +6,7 @@
 
 (* Data from http://archive.ics.uci.edu/ml/datasets/Iris 
    Transformed with:
-   sed "s/I/\"I/;s/$/\";/;s/-/ /;s/^/  /;s/,/, /g" < bezdekIris.data
-*)
+   sed "s/I/\"I/;s/$/\";/;s/-/ /;s/^/  /;s/,/, /g" < bezdekIris.data *)
 
 let sample =
 [ 5.1, 3.5, 1.4, 0.2, "Iris setosa";
