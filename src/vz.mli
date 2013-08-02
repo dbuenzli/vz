@@ -12,7 +12,7 @@
     Open the module to use it, this defines only modules
     and types in your scope.
 
-    {e Release %%VERSION%% - %%AUTHORS%% } *)
+    {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 open Gg
 open Vg
@@ -41,7 +41,7 @@ module Stat : sig
   val value : ('a, 'b) stat -> 'b 
   (** [value s] is the value of statistic [s]. *)
 
-  (** {1:prim Primitive statistics} *)
+  (** {1:prim Primitive statistics combinators} *)
 
   val count : ('a, float) stat 
   (** [count s] is the {e integral} number of values in the data. *)
@@ -98,7 +98,7 @@ module Stat : sig
   (** [fold f acc] is [f] folded on the the data starting with 
       [acc]. *)
       
-  (** {1 Higher-order statistics} *) 
+  (** {1 Higher-order statistic combinators} *) 
 
   val list : ('a, 'b) stat list -> ('a, 'b list) t
   (** [list l] is the combined statistics of [l] on the data. *)
@@ -136,7 +136,7 @@ module Scale : sig
 
   (** {1 Scales} *)
 
-  type 'a set = [ `Discrete of 'a list | `Interval of 'a list ] 
+  type 'a set = [ `Discrete of 'a list | `Intervals of 'a list ] 
   (** The type for representing sets of values. *)
   
   type ('a, 'b) t = ('a, 'b) scale
@@ -159,7 +159,15 @@ module Scale : sig
   (** [range s] is the range of [s]. *)
 
   val map : ('a, 'b) scale -> ('a -> 'b)
-  (** [map s] is the mapping function of [s]. *)
+  (** [map s] is the mapping function of [s]. 
+
+      {b Warning.} On [s] ordinal scales the mapping function raises
+      [Invalid_argument] on undefined argument. Use {!partial_map} to
+      ensure that it never raises. *)
+
+  val partial_map : ('a, 'b) scale -> ('a -> 'b option) 
+  (** [partial_map s] is like [map s] except on ordinal scales 
+      it returns [None] on undefined argument. *)
 
   val ticks : ?count:bool -> ('a, 'b) scale -> 'a list
       
@@ -179,7 +187,9 @@ module Scale : sig
       {- [nice] if [true] the bounds of [dom] are {e expanded} to fall
          on round numbers. The precision of these round numbers is one
          order of magnitude less than the extent [d] of the domain that
-         is: 10{^(round (log{_10} d) - 1)}. Default to [false].}}  *)
+         is: 10{^(round (log{_10} d) - 1)}. Default to [false].}}  
+
+      The map is undefined if [(fst dom) >= (snd dom)]. TODO review that. *)
 
 (* 
   val linear_p : ?clamp:bool -> ?nice:bool -> float list -> float list -> 
@@ -193,6 +203,10 @@ module Scale : sig
       Ordinal scales maps a discrete orderable domain to a range. *)
 
   val ordinal : ?cmp:('a -> 'a -> int) -> 'a list -> 'b list -> ('a, 'b) scale
+  (** [ordinal cmp dom range] maps the value [dom]{_i} to the value 
+      [range]{_i mod max} with max [= List.length range - 1]. 
+      [cmp] is the order on the domain, defaults to [Pervasives.compare]. *)
+
   
 
 (** {1 Generating discrete ranges} *)

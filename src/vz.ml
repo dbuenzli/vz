@@ -178,7 +178,7 @@ module Stat = struct
       let s4' = s4.add s4 v in 
       { add = add s1' s2' s3' s4'; 
         value = fun () -> s1'.value (), s2'.value (), s3'.value (), 
-                         s4'.value (); }
+                          s4'.value (); }
     in
     { value; add = add s1 s2 s3 s4 }    
 
@@ -203,7 +203,7 @@ end
 
 module Scale = struct
 
-  type 'a set = [ `Discrete of 'a list | `Interval of 'a list ] 
+  type 'a set = [ `Discrete of 'a list | `Intervals of 'a list ] 
   let extents = function 
   | `Intervals (min :: vs) ->
       let rec last v acc = function 
@@ -228,6 +228,10 @@ module Scale = struct
   let dom_raw s = s.dom_raw
   let range s = s.range 
   let map s = s.map
+  let partial_map s = 
+    let f = s.map in
+    fun v -> try Some (f v) with Invalid_argument _ -> None 
+    
   let ticks ?count s = failwith "TODO"
 
   let floor_to_step step x = floor (x /. step) *. step
@@ -250,32 +254,27 @@ module Scale = struct
     loop (-. max_float) r
 
   let linear_map ~clamp d r = match d, r with 
-  | [dmin; dmax], [rmin; rmax] -> 
-      let di = dmax -. dmin in 
-      let ri = rmax -. rmin in
-      failwith "TODO"
+  | [x0; x1], [y0; y1] -> 
+      let inv_di = 1. /. (x1 -. x0) in
+      let ri = y1 -. y0 in
+      let c = inv_di *. ri in
+      if x0 = x1 then fun t -> y0 else
+      if not clamp then fun t -> c *. (t -. x0) +. y0 else
+      fun t -> 
+        if t > x1 then y1 else 
+        if t < x0 then y0 else
+        c *. (t -. x0) +. y0
   | _, _ -> failwith "TODO"
-(*
-      if clamp then 
-      else
-      fun x -> 
-        let t = (t -. dmin) /. d.i in 
-        rmin +. ((
- 
-      fun x -> 
-        let t = 
-        rmin +. (( t -. dmin) /. di)
-        rmin +. ((x -. 
-  | 
-  *)         
+
+
   let linear ?(clamp = false) ?(nice = false) (dmin, dmax) (rmin, rmax) = 
-    let dom_raw = [ dmin; dmax] in 
-    let range = [ rmin; rmax] in
+    let dom_raw = [dmin; dmax] in 
+    let range = [rmin; rmax] in
     check_range dom_raw; check_range range;
     let dom = if nice then nice_interval dom_raw else dom_raw in 
     { map = linear_map ~clamp dom range; 
-      dom = `Interval dom ; dom_raw = `Interval dom_raw; 
-      range = `Interval range; clamp; nice }      
+      dom = `Intervals dom ; dom_raw = `Intervals dom_raw; 
+      range = `Intervals range; clamp; nice }      
     
 (* 
   let linear_p ?(clamp = false) ?(nice = false) dom range = 
@@ -283,8 +282,25 @@ module Scale = struct
     failwith "TODO"
 *)
 
-
-  let ordinal ?(cmp = Pervasives.compare) d r = failwith "TODO"
+  let ordinal_map (type dv) cmp d r = 
+    let module Dmap = Map.Make(struct type t = dv let compare = cmp end) in
+    let rec add acc d r' = match d, r' with 
+    | [], _ -> acc
+    | d, [] -> add acc d r 
+    | x :: d, y :: r' -> add (Dmap.add x y acc) d r' 
+    in
+    let m = add Dmap.empty d r in 
+    let f x = try Dmap.find x m with Not_found -> invalid_arg "TODO" in
+    f
+  
+  let ordinal (type dv) ?(cmp = Pervasives.compare) (d : dv list) r =
+    if r = [] then invalid_arg "TODO" else 
+    { map = ordinal_map cmp d r; 
+      dom = `Discrete d; 
+      dom_raw = `Discrete d; 
+      range = `Discrete r; clamp = false; nice = false }
+    
+    
 
   let range_pts ?rpad ~min ~max n = failwith "TODO"
   let range_bands ?rpad ?pad ~min ~max n = failwith "TODO"
