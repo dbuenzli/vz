@@ -13,7 +13,7 @@ let log fmt =
   let flush _ = Firebug.console ## log (flush ()) in
   Format.kfprintf flush Format.str_formatter fmt
 
-let name = fst
+let label = fst
 let getter = snd
 let species = "species", (fun (_, _, _, _, s) -> s)
 let traits = List.rev
@@ -29,46 +29,63 @@ let species_stats data =
   let stats = Stat.t2 (Stat.list trait_ranges) species in 
   Stat.value (List.fold_left Stat.add stats data)
 
-let xyset x y = (* indexed X x Y *)
-  let xs xi x = List.mapi (fun yi y -> ((float xi), x), ((float yi), y)) y in
-  List.concat (List.mapi xs x)
-
-let xyplot ~pad ~size ~x:((xl, x), xdom) ~y:((yl, y), ydom) obj color data =
-  let range = (0.5 *. pad, size -. 0.5 *. pad) in
-  let xmap = Scale.map (Scale.linear xdom range) in
-  let ymap = Scale.map (Scale.linear ydom range) in
-  let x v = xmap (x v) in 
-  let y v = ymap (y v) in
-  let mark = I.cut (Vz.Path.circle 0.5) in
+let xyplot ~pad ~size ~x ~y obj color data acc =
+  let mark = I.cut (Mark.dot 1.0) in
   let dot v = I.const (color (obj v)) >> mark >> I.move (V2.v (x v) (y v)) in
   let blend_dot acc r = acc >> I.blend (dot r) in 
-  List.fold_left blend_dot I.void data
+  List.fold_left blend_dot acc data
 
-let frame pad size = 
-  let o, r = 0.5 *. pad, size -. pad in
-  let bounds = P.empty >> P.rect (Box2.v (P2.v o o) (Size2.v r r)) in
-  let area = `O { P.o with P.width = 0.2; } in
-  I.cut ~area bounds (I.const (Color.gray 0.85))
+let xyset_scales ~pad ~size x y =
+  let range = 0.5 *. pad, size -. 0.5 *. pad in
+  let xy_scale xi (x_col, x_dom) yi (y_col, y_dom) =
+    ((float xi), x_col, Scale.linear x_dom range),
+    ((float yi), y_col, Scale.linear y_dom range)
+  in
+  let xs xi x = List.mapi (xy_scale xi x) y in
+  List.concat (List.mapi xs x)
 
-let image = 
+let font = Font.create "OpenSans" 2.2
+let labeli col = I.cut_glyphs ~text:(label col) font [] (I.const Color.black) 
+
+let image =
   let size = 35. in
   let pad = 4.5 in
   let trait_count = List.length traits in
   let trait_ranges, species_range = species_stats Iris_data.sample in
   let traits = List.combine traits trait_ranges in
   let species_count = List.length species_range in
-  let colors = Colors.qual_fixed ~a:0.75 ~size:species_count `Brewer_set2_8 in
+  let colors = Colors.qual_fixed ~a:0.8 ~size:species_count `Brewer_set2_8 in
   let cmap = Scale.map (Scale.ordinal species_range (Array.to_list colors)) in
-  let xyset = xyset traits traits in
-  let add_xy acc ((xi, x), (yi, y)) = 
+  let xyset_scales = xyset_scales ~pad ~size traits traits in
+  let add_ticks acc ((xi, _, xscale), (yi, _, yscale)) = 
+    let xticks = if xi <> 0. then I.void else I.void in
+    let yticks = if yi <> 0. then I.void else I.void in
+    acc >> I.blend xticks >> I.blend yticks
+  in
+  let add_xy acc ((xi, x_col, xscale), (yi, y_col, yscale)) =
+    let hpad, _ as range = 0.5 *. pad, size -. 0.5 *. pad in
+    let frame = 
+      let s = size -. pad in
+      let bounds = P.empty >> P.rect (Box2.v (P2.v hpad hpad) (Size2.v s s)) in
+      let area = `O { P.o with P.width = 0.2; } in
+      I.cut ~area bounds (I.const (Color.gray 0.75))
+    in
+    let xmap = Scale.map xscale in
+    let ymap = Scale.map yscale in
+    let x v = xmap ((getter x_col) v) in 
+    let y v = ymap ((getter y_col) v) in
     let pos = V2.v (xi *. size) (yi *. size) in
     let plot = xyplot ~pad ~size ~x ~y (getter species) cmap Iris_data.sample in
-    acc >> I.blend (frame pad size >> I.blend plot >> I.move pos)
+    let lpos = V2.v (V2.x pos +. pad) (V2.y pos +. size -. 1.5 *. pad) in
+    let label = if xi = yi then labeli x_col else I.void in 
+    acc >> I.blend (frame >> plot >> I.move pos) >> 
+    I.blend (label >> I.move lpos)
   in
-  let image = List.fold_left add_xy I.void xyset in
+  let grid = List.fold_left add_ticks I.void xyset in
+  let image = List.fold_left add_xy grid xyset_scales in
   let side = size *. (float trait_count) +. pad in
-  let view = Box2.v P2.o (Size2.v side side) in 
-  let size = Size2.v 160. 160. (* mm *) in 
+  let view = Box2.v P2.o (Size2.v (side +. size) side) in 
+  let size = Size2.v 200. 160. (* mm *) in 
   `Image (size, view, image) 
   
 (* Browser bureaucracy. *)

@@ -6,12 +6,52 @@
 
 open Gg
 open Vg
+open Vz
 
 let str = Format.sprintf
 let log f = Format.printf (f ^^ "@?") 
 let fail fmt = 
   let fail _ = failwith (Format.flush_str_formatter ()) in
   Format.kfprintf fail Format.str_formatter fmt
+
+(* Stat TODO *) 
+
+(* Scales *)
+
+let test_scale_linear () = 
+  log "Testing linear scales.\n";
+  let pair set = match set with 
+  | `Intervals [x0; xn] -> (x0, xn) 
+  |  _ -> assert false
+  in
+  let s = Scale.linear ~nice:true (-1.1, 2.1) (0., 1.) in
+  let sf = Scale.map s in
+  let (rx0, rxn) = pair (Scale.dom_raw s) in
+  let (x0, xn) = pair (Scale.dom s) in 
+  let (y0, yn) = pair (Scale.range s) in 
+  assert (rx0 = -1.1 && rxn = 2.1); 
+  assert (x0 = -2. && xn = 3.);
+  assert (y0 = 0. && yn = 1.);
+  assert (Scale.nice s); 
+  assert (not (Scale.clamp s));
+  assert (sf (-2.) = 0.);
+  assert (sf 3. = 1.); 
+  let s = Scale.linear ~nice:true (2.1, -1.1) (0., 1.) in
+  let sf = Scale.map s in
+  let (rx0, rxn) = pair (Scale.dom_raw s) in
+  let (x0, xn) = pair (Scale.dom s) in 
+  let (y0, yn) = pair (Scale.range s) in 
+  assert (rx0 = 2.1 && rxn = -1.1); 
+  assert (x0 = 3. && xn = -2.);
+  assert (y0 = 0. && yn = 1.);
+  assert (Scale.nice s); 
+  assert (not (Scale.clamp s));
+  assert (sf 3. = 0.); 
+  assert (sf (-2.) = 1.);
+  ()
+  
+
+(* Colors *)
   
 let irange ?(min = 0.) ?(max = 1.) ~dt f = 
   let n = truncate (((max -. min) /. dt) +. 1.) in
@@ -31,7 +71,7 @@ let test_msc () =
     irange ~min:0. ~max:1. ~dt:0.01 >>= fun t ->
     let c = c t in
     let _, _, h, _ = V4.to_tuple (Color.to_luva ~lch:true c) in 
-    let c' = Vz.Colors.msc h in 
+    let c' = Colors.msc h in 
     if not (V4.equal_f (Float.equal_tol ~eps:1.e-9) c c') then 
       fail "%a != %a\n" V4.pp c V4.pp c';
   in
@@ -50,7 +90,7 @@ let test_color_seq () =
   irange ~min:0. ~max:1. ~dt:0.1 >>= fun s ->
   irange ~min:0. ~max:1. ~dt:0.1 >>= fun b -> 
   irange ~min:0. ~max:1. ~dt:0.1 >>= fun c ->
-  let cs = Vz.Colors.seq ~w ~s ~b ~c ~h:(Float.rad_of_deg h) () in 
+  let cs = Colors.seq ~w ~s ~b ~c ~h:(Float.rad_of_deg h) () in 
   irange ~min:0. ~max:1. ~dt:1. >>= fun t -> 
   let color = cs t in 
   let urange d = 0. <= d && d <= 1. in
@@ -67,7 +107,7 @@ let test_qual () =
   irange ~min:0. ~max:1. ~dt:0.1 >>= fun s -> 
   irange ~min:0. ~max:1. ~dt:0.1 >>= fun b -> 
   irange ~min:0. ~max:1. ~dt:0.1 >>= fun c ->
-  let q = Vz.Colors.qual_d 16 in
+  let q = Colors.qual_d 16 in
   for i = 0 to Array.length q - 1 do 
     let color = q.(i) in
     let urange d = 0. <= d && d <= 1. in 
@@ -77,11 +117,15 @@ let test_qual () =
           (%.16f %.16f %.16f)" 
       eps r s b c cr cg cb
   done
-  
+    
 let test () =
   Printexc.record_backtrace true; 
+  test_scale_linear ();
+(*
+  TODO uncomment
   test_color_seq (); 
   test_qual ();
+*)
   log "All tests succeded.\n"
 
 let () = if not (!Sys.interactive) then test () 

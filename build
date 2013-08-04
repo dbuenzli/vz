@@ -12,7 +12,7 @@ action ()
     case $1 in
       default)      $OCAMLBUILD vz.cmx ;;
       tests)        $OCAMLBUILD test.native;;
-      colors)       shift; jsoo-build $* test/colors.ml ;;
+      color_schemes)       shift; jsoo-build $* test/color_schemes.ml ;;
       iris)         shift; jsoo-build $* test/iris.ml ;;
       cam)          shift; jsoo-build $* test/cam.ml ;;
       doc)          shift; pkg-doc $* doc/dev-api.docdir ;;

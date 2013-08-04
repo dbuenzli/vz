@@ -26,6 +26,8 @@ let str = Printf.sprintf
 let err_scheme_size ssize s = str "scheme size %d exceeded (%d)" ssize s
 let err_interval (lo, hi) = str "invalid interval: ... %f, %f ..." lo hi
 
+let vz_eps = 1e-9
+
 (* Statistics *)
 
 type ('a, 'b) stat = 
@@ -199,27 +201,94 @@ module Stat = struct
     { value; add = add s1 s2 s3 s4 s5 }    
 end
 
+let linear_sample min max step = (* assert (x0 < x1) *)
+  let countf = (max -. min) /. step in 
+  let count = Pervasives.floor countf in
+  if Float.is_nan count then invalid_arg "nan count TODO" else
+  let rec loop i acc = 
+    if i < 0. then acc else loop (i -. 1.) ((min +. i *. step) :: acc)
+  in
+  loop count []
+
+(* Nice numbers *)
+module Nice = struct
+  
+  let step_floor step x = floor (x /. step) *. step 
+  let step_ceil step x = ceil (x /. step) *. step
+  let step_round step x = Float.round (x /. step) *. step
+
+  (* References.
+
+     P. Heckbert. Nice numbers for graph labels. 
+     In A. Glassner, editor, Graphics Gems, pages 61–63 657–659. 
+     Academic Press, Boston, 1990.
+  
+     An Extension of Wilkinson’s Algorithm for Positioning Tick Labels on Axes
+     Justin Talbot, Sharon Lin, Pat Hanrahan
+     IEEE Trans. Visualization & Comp. Graphics (Proc. InfoVis), 2010 *)
+
+  let ceil x = 
+    let exp = Pervasives.floor (log10 x) in 
+    let omag = 10. ** exp in
+    let frac = x /. omag in
+    let nice_frac = 
+      if frac <= 1. then 1. else 
+      if frac <= 2. then 2. else 
+      if frac <= 5. then 5. else
+      10.
+    in
+    nice_frac *. omag
+
+  let floor x = 
+    let exp = Pervasives.floor (log10 x) in 
+    let omag = 10. ** exp in
+    let frac = x /. omag in
+    let nice_frac = 
+      if frac < 2. then 1. else 
+      if frac < 5. then 2. else 
+      if frac < 10. then 5. else
+      10.
+    in
+    nice_frac *. omag
+
+  let round x = 
+    let exp = Pervasives.floor (log10 x) in 
+    let omag = 10. ** exp in
+    let frac = x /. omag in
+    let nice_frac =
+      if frac < 1.5 then 1. else 
+      if frac < 3.5 (* Heckbert uses 3. *) then 2. else 
+      if frac < 7.5 (* Hecbkert uses 7. *) then 5. else 
+      10.
+    in
+    nice_frac *. omag
+
+  let sample ~min ~max n =                 (* modified version of Heckbert. *)
+    let exts = ceil (max -. min) in 
+    let step = round (exts /. (float (n - 1))) in
+    let min = step_ceil step min in 
+    let max = step_floor step max in 
+    let nfrac = Pervasives.max (-. floor(log10 exts)) 0. in 
+    nfrac, linear_sample min max step
+
+  let bounds ~min ~max =
+    if min = max then min, min else 
+    let exts = max -. min in 
+    let nice_step = 10. ** (Float.round (log10 exts) -. 1.) in 
+    step_floor nice_step min, step_ceil nice_step max 
+end
+
 (* Scale *)
 
 module Scale = struct
 
-  type 'a set = [ `Discrete of 'a list | `Intervals of 'a list ] 
-  let extents = function 
-  | `Intervals (min :: vs) ->
-      let rec last v acc = function 
-      | [] -> v, acc | v :: vs -> last v (v :: acc) vs 
-      in
-      let max, vs_rev = last min [] vs in 
-      min, max, vs_rev 
-  | `Intervals [] -> assert false
-  | `Discrete _ -> failwith "TODO"
-
+  type 'a set = [ `Discrete of 'a list | `Intervals of 'a list ]
   type ('a, 'b) t = 
     { map : 'a -> 'b;
       dom : 'a set;
       dom_raw : 'a set;
       range : 'b set;
-      clamp : bool; 
+      clamp : bool;
       nice : bool; } 
 
   let clamp s = s.clamp
@@ -232,26 +301,34 @@ module Scale = struct
     let f = s.map in
     fun v -> try Some (f v) with Invalid_argument _ -> None 
     
-  let ticks ?count s = failwith "TODO"
-
-  let floor_to_step step x = floor (x /. step) *. step
-  let ceil_to_step step x = ceil (x /. step) *. step 
+          
+  let extents xs = match xs with 
+  | (x0 :: xs) ->
+      let rec last acc = function 
+      | last :: [] -> last, acc 
+      | x :: xs -> last (x :: acc) xs 
+      | [] -> assert false
+      in
+      let xn, xs_rev = last [] xs in 
+      x0, xn, xs_rev
+  | [] -> assert false
+            
 
   let nice_interval dom = 
-    let min, max, vs_rev = extents (`Intervals dom) in 
-    let exts = max -. min in
-    let mag = 10. ** (Float.round (log10 exts) -. 1.) in  
-    let min' = floor (min /. mag) *. mag in 
-    let max' = ceil (max /. mag) *. mag in
-    min' :: List.rev (max' :: vs_rev)
-        
-  let check_range r = 
-    let rec loop last = function 
-    | [] -> ()
-    | v :: vs -> 
-        if v < last then invalid_arg (err_interval (last, v)) else loop v vs
-    in
-    loop (-. max_float) r
+    let x0, xn, xs_rev = extents dom in 
+    if x0 = xn then dom else
+    let exts = abs_float (xn -. x0) in
+    let mag_order = 10. ** (Float.round (log10 exts) -. 1.) in  
+    let rev = x0 > xn in
+    let x0' = (if rev then ceil else floor) (x0 /. mag_order) *. mag_order in
+    let xn' = (if rev then floor else ceil) (xn /. mag_order) *. mag_order in
+    x0' :: List.rev (xn' :: xs_rev)
+
+
+  let linear_ticks ?(bounds = false) x0 x1 n = (* assert (x0 < x1) *)
+    Nice.sample x0 x1 n
+      
+  let ticks ?(bounds = false) f acc scale n  = failwith "TODO"
 
   let linear_map ~clamp d r = match d, r with 
   | [x0; x1], [y0; y1] -> 
@@ -264,13 +341,12 @@ module Scale = struct
         if t > x1 then y1 else 
         if t < x0 then y0 else
         c *. (t -. x0) +. y0
-  | _, _ -> failwith "TODO"
+  | _, _ -> failwith "TODO linmap"
 
 
   let linear ?(clamp = false) ?(nice = false) (dmin, dmax) (rmin, rmax) = 
     let dom_raw = [dmin; dmax] in 
     let range = [rmin; rmax] in
-    check_range dom_raw; check_range range;
     let dom = if nice then nice_interval dom_raw else dom_raw in 
     { map = linear_map ~clamp dom range; 
       dom = `Intervals dom ; dom_raw = `Intervals dom_raw; 
@@ -307,6 +383,54 @@ module Scale = struct
 end
 
 type ('a, 'b) scale = ('a, 'b) Scale.t
+
+module Mark = struct
+
+  type halign = [ `Center | `Left | `Right ]
+  (** The type for horizontal alignements. *)
+
+  type valign = [ `Center | `Bottom | `Top ]
+  (** The type for vertical alignements. *)
+  
+  let htick ?(path = P.empty) ?(halign = `Center) ?(valign = `Center) 
+      ?(pos = P2.o) w =
+    let xoff = match halign with 
+    | `Center -> -.0.5 *. w | `Left -> -.w | `Right -> 0.
+    in
+    let p0 = P2.v (P2.x pos +. xoff) (P2.y pos) in
+    let p1 = P2.v (P2.x pos +. xoff +. w) (P2.y pos) in
+    path >> P.sub p0 >> P.line p1
+
+  let vtick ?(path = P.empty) ?(halign = `Center) ?(valign = `Center) 
+      ?(pos = P2.o) h =
+    let yoff = match valign with 
+    | `Center -> -.0.5 *. h | `Bottom -> -.h | `Top -> 0.
+    in
+    let p0 = P2.v (P2.x pos) (P2.y pos +. yoff) in
+    let p1 = P2.v (P2.x pos) (P2.y pos +. yoff +. h) in
+    path >> P.sub p0 >> P.line p1
+
+  let dot ?(path = P.empty) ?(halign = `Center) ?(valign = `Center) 
+      ?(pos = P2.o) w = 
+    let hw = 0.5 *. w in
+    let xoff = match halign with `Center -> 0. | `Left -> -.hw | `Right -> hw in
+    let yoff = match valign with `Center -> 0. | `Bottom -> -.hw | `Top -> hw in
+    let pos = P2.v (P2.x pos +. xoff) (P2.y pos +. yoff) in 
+    path >> P.circle pos hw
+
+  let square ?(path = P.empty) ?(halign = `Center) ?(valign = `Center) 
+      ?(pos = P2.o) w =
+    let xoff = match halign with 
+    | `Center -> -.0.5 *. w | `Left -> -.w | `Right -> 0.
+    in
+    let yoff = match valign with 
+    | `Center -> -.0.5 *. w | `Bottom -> -.w | `Top -> 0.
+    in
+    let pos = P2.v (P2.x pos +. xoff) (P2.y pos +. yoff) in 
+    let rect = Box2.v pos (Size2.v w w) in
+    path >> P.rect rect
+    
+end
 
 module Path = struct
   let circle ?(c = P2.o) r = P.empty >> P.circle c r 

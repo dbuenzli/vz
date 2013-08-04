@@ -17,6 +17,7 @@
 open Gg
 open Vg
 
+
 (** {1:sum Statistics} *)
 
 type ('a, 'b) stat 
@@ -122,6 +123,60 @@ module Stat : sig
       and [s5] on the data. *)
 end
 
+(** {1:nice Nice numbers} *)
+
+module Nice : sig
+
+
+  (** {1:quantize Quantize} *)
+
+  val step_floor : float -> float -> float 
+  (** [step_floor step v] is the greatest number [v'] such 
+      that [v' <= v] and [v' /. step] is integral. *)
+
+  val step_ceil : float -> float -> float 
+  (** [ceil_floor step v] is the smallest number [v'] such 
+      that [v <= v'] and [v' /. step] is integral. *)
+
+  val step_round : float -> float -> float 
+  (** [ceil_round step v] is either {!step_floor} or {!ceil_floor} 
+      whichever is the nearest. Ties are rounded towards positive infinity. *)
+
+  (** {1:nice Nicing} 
+
+      A {e nice number} is a number that belongs to the set 
+      \{ q x 10{^z} | q ∈ \{1,2,5\} and z ∈ Z \}.
+
+      {b Warning.} The results of these functions are subject 
+      to change do not use if you require repoducibility.
+*)
+
+  val floor : float -> float 
+  (** [floor v] is the smallest number [v'] such that [v' <= v] and 
+      [v'] is a nice number. *)
+      
+  val ceil : float -> float 
+  (** [ceil v] is the smallest number [v'] such that [v <= v'] and 
+      [v'] is a nice number. *)
+
+  val round : float -> float     
+  (** [round v] is either {!floor} or {!ceil} 
+      whichever is the nearest. Ties are rounded towards positive 
+      infinity. *)
+    
+  val sample : min:float -> max:float -> int -> float * float list 
+  (** [sample min max n] samples the interval \[[min;max]\] 
+      {e approximatively} [n] times at uniformely spaced nice numbers. 
+      TODO fold instead of list. *)
+
+  val bounds : min:float -> max:float -> float * float
+  (** [bounds min max] expands the interval \[[min;max]\] to 
+      [(min', max')]\]
+      whose precision is one order of magnitude less than the 
+      extent of the domain that is: 10{^(round
+         (log{_10} (max - min)) - 1)} and nice. *)
+end
+
 (** {1:scales Scales} *)
 
 type ('a, 'b) scale
@@ -143,8 +198,9 @@ module Scale : sig
   (** The type for scales from values of type ['a] to ['b]. *)
 
   val clamp : ('a, 'b) scale -> bool 
-  (** [clamp s] is [true] if the map of [s] is clamped to the scale
-      domain. *)
+  (** [clamp s] is [true] if the map of [s] first clamps values 
+      to the scale domain before mapping them (ensures the map returns
+      only values in the range). *)
 
   val nice : ('a, 'b) scale -> bool
   (** [nice s] is [true] if the bounds of [s] are niced. *)
@@ -161,7 +217,7 @@ module Scale : sig
   val map : ('a, 'b) scale -> ('a -> 'b)
   (** [map s] is the mapping function of [s]. 
 
-      {b Warning.} On [s] ordinal scales the mapping function raises
+      {b Warning.} On ordinal scales the mapping function raises
       [Invalid_argument] on undefined argument. Use {!partial_map} to
       ensure that it never raises. *)
 
@@ -169,27 +225,34 @@ module Scale : sig
   (** [partial_map s] is like [map s] except on ordinal scales 
       it returns [None] on undefined argument. *)
 
-  val ticks : ?count:bool -> ('a, 'b) scale -> 'a list
-      
+  val ticks : ?bounds:bool -> ('a -> float -> 'a) -> 'a -> 
+    (float, float) scale -> int -> 'a 
+  (** [ticks bounds f acc scale n] is the result of folding 
+      [f] over {e approximatively} [count] uniformly
+      spaced values taken in [scale]'s domain. If [bounds] is [true]
+      makes sure that the actual bounds of the domain are included. *)
+
   (** {1 Linear scales} *)
 
   (** The type for linear scales. Linear scales maps *)
 
   val linear : ?clamp:bool -> ?nice:bool -> (float * float) -> 
     (float * float) -> (float, float) scale
-  (** [linear clamp nice dom range] maps the interval [dom] on 
-      the interval [range]. 
+  (** [linear clamp nice (x0, x1) (y0, y1)] is the map that 
+      linearly transforms [x0] on [y0] and [x1] on [y1]. If
+      the map is undefined ([x0 = x1] and [y0 <> y1]) the 
+      map always returns [y0]. 
       {ul 
       {- [clamp] if [false] (default), the scale maps values outside
-         the domain according to the specified linear
+         the domain [(x0, x1)] according to the specified linear
          transformation. If [true] values outside the domain are
          clamped to the nearest domain bounds.}
-      {- [nice] if [true] the bounds of [dom] are {e expanded} to fall
-         on round numbers. The precision of these round numbers is one
-         order of magnitude less than the extent [d] of the domain that
-         is: 10{^(round (log{_10} d) - 1)}. Default to [false].}}  
-
-      The map is undefined if [(fst dom) >= (snd dom)]. TODO review that. *)
+      {- [nice] if [true] the given domain [(x0, x1)] is first {e expanded}
+         to fall on round numbers [(x0', x1')] which are
+         used to define the linear map. The precision of these round
+         numbers is one order of magnitude less than the extent of the 
+         domain that is: 10{^(round
+         (log{_10} abs_float (x1 - x0)) - 1)}. Default to [false].}} *)
 
 (* 
   val linear_p : ?clamp:bool -> ?nice:bool -> float list -> float list -> 
@@ -217,11 +280,104 @@ module Scale : sig
 end
 
 
-(** {1 Image helpers} *) 
+(** {1 Image and path helpers} *) 
 
+(*
 module Path : sig
   val circle : ?c:v2 -> float -> Vg.path
 end
+*)
+(** Marks. 
+
+    This module provides a few convenience combinators to create
+    paths. 
+*)
+module Mark : sig
+
+  (** {1:align Mark alignement} *)
+
+  type halign = [ `Center | `Left | `Right ]
+  (** The type for horizontal alignements. *)
+
+  type valign = [ `Center | `Bottom | `Top ]
+  (** The type for vertical alignements. *)
+
+(*
+  type hdir = [ `Left | `Right ] 
+  type vdir = [ `Up | `Down ]
+*)
+
+  (** {1:align Marks} 
+
+      Mark constructors share the following optional parameters.
+      {ul 
+      {- [contour], if [true] ensures that the path defines a bounded
+         area of the plane (defaults to [false]).}      
+      {- [normalize], if [true] adjusts the size of the mark 
+         so that it's area is equivalent to size of a square of the 
+         given width.}
+      {- [path], the path to add the mark to (defaults to {!P.empty}.).
+         Marks always start a new subpath.} 
+      {- [pos], the location of the mark (defaults to {!P2.o}).}
+      {- [halign], mark horizontal alignement with respect to [pos] (defaults 
+         to [`Center]).}
+      {- [valign], mark vertical alignement with respect to [pos] 
+      (defaults to [`Center]).}}
+*)
+
+  val htick : ?path:Vg.path -> ?halign:halign -> ?valign:valign -> ?pos:v2 -> 
+    float -> Vg.path
+  (** [htick l] is a horizontal tick of length [l]. *)
+
+  val vtick : ?path:Vg.path -> ?halign:halign -> ?valign:valign -> ?pos:v2 -> 
+    float -> Vg.path
+  (** [vtick l] is a vertical tick of length [l]. *)
+
+  val dot : ?path:Vg.path -> ?halign:halign -> 
+    ?valign:valign -> ?pos:v2 -> float -> Vg.path
+  (** [dot w] is a dot of diameter [w]. *)
+
+  val square : ?path:Vg.path -> ?halign:halign -> ?valign:valign -> ?pos:v2 -> 
+    float -> Vg.path
+  (** [square w] is a square of side [w]. *)
+
+
+(*
+
+  val diamond : ?path:Vg.path -> ?halign:halign -> ?valign:valign -> ?pos:v2 -> 
+    float -> Vg.path
+  (** [diamond w] is a diamond of side [w]. *)
+
+  val plus : ?at:v2 -> float -> Vg.path 
+  (** [plus w] is a plus sign of length [w]. *) 
+
+  val cross : ?at:v2 -> float -> Vg.path
+  (** [cros w] is a plus sign of length [w] rotated by 45°. *)
+*)
+
+end
+
+(*
+type 'a axis 
+(** The type for axes for values of type 'a. *)
+*)
+
+(*
+module Axis : sig
+
+  type 'a t = 'a axis
+
+  val v : ('a, float) Vz.scale -> 'a scale  
+  val h : ('a, float) Vz.scale -> 'a scale
+
+  val fold_ticks : ?at:float -> [`H | `V ] -> 
+    ('a -> Gg.p2 -> Vg.image) -> ('a, float) Vz.scale -> 
+
+
+  val cut_ticks : ?outline:P.outline -> I.image -> Vz.scale -> 
+end
+*)
+
 
 (** {1 Colors schemes} *)
 
