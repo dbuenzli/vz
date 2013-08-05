@@ -127,7 +127,6 @@ end
 
 module Nice : sig
 
-
   (** {1:quantize Quantize} *)
 
   val step_floor : float -> float -> float 
@@ -145,11 +144,11 @@ module Nice : sig
   (** {1:nice Nicing} 
 
       A {e nice number} is a number that belongs to the set 
-      \{ q x 10{^z} | q ∈ \{1,2,5\} and z ∈ Z \}.
+      \{ q⋅10{^z} | q ∈ \{1,2,5\} and z ∈ Z \}.
 
-      {b Warning.} The results of these functions are subject 
-      to change do not use if you require repoducibility.
-*)
+      {b Warning.} The nice number set is subject to change
+      do not use these functions if you require absolute 
+      reproducibility. *)
 
   val floor : float -> float 
   (** [floor v] is the smallest number [v'] such that [v' <= v] and 
@@ -174,7 +173,7 @@ module Nice : sig
       [(min', max')]\]
       whose precision is one order of magnitude less than the 
       extent of the domain that is: 10{^(round
-         (log{_10} (max - min)) - 1)} and nice. *)
+         (log{_10} (max - min)) - 1)}. *)
 end
 
 (** {1:scales Scales} *)

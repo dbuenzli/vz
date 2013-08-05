@@ -81,7 +81,7 @@ let image =
     acc >> I.blend (frame >> plot >> I.move pos) >> 
     I.blend (label >> I.move lpos)
   in
-  let grid = List.fold_left add_ticks I.void xyset in
+  let grid = List.fold_left add_ticks I.void xyset_scales in
   let image = List.fold_left add_xy grid xyset_scales in
   let side = size *. (float trait_count) +. pad in
   let view = Box2.v P2.o (Size2.v (side +. size) side) in 
