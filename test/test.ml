@@ -14,7 +14,74 @@ let fail fmt =
   let fail _ = failwith (Format.flush_str_formatter ()) in
   Format.kfprintf fail Format.str_formatter fmt
 
+let raises f v = try f v; fail "didn't raise" with _ -> ()
+let eqf v v' = 
+  if v = v' then () else 
+  fail "%f (%a) = %f (%a)" v Float.pp v v' Float.pp v'
+
 (* Stat TODO *) 
+
+
+let test_nice () = 
+  log "Testing nice numbers.\n";
+  raises (Nice.step 0 1.) 10.; 
+  eqf (Nice.step 1 1. 1.) 0.;
+  eqf (Nice.step 2 1. 1.) 0.;
+  raises (Nice.step_floor ~step:(-0.1)) 2.; 
+  eqf  (Nice.step_floor ~step:2. 4.5) 4.;
+  eqf  (Nice.step_floor ~step:2. 2.5) 2.;
+  eqf  (Nice.step_floor ~step:2. 2.) 2.;
+  eqf  (Nice.step_floor ~step:2. 1.5) 0.;
+  eqf  (Nice.step_floor ~step:2. 0.) 0.;
+  eqf  (Nice.step_floor ~step:2. (-0.5)) (-2.);
+  eqf  (Nice.step_floor ~step:2. (-1.5)) (-2.);
+  eqf  (Nice.step_floor ~step:2. (-2.5)) (-4.);
+  raises (Nice.step_ceil ~step:(-0.1)) 2.; 
+  eqf  (Nice.step_ceil ~step:2. 4.5) 6.;
+  eqf  (Nice.step_ceil ~step:2. 2.5) 4.;
+  eqf  (Nice.step_ceil ~step:2. 2.) 2.;
+  eqf  (Nice.step_ceil ~step:2. 1.5) 2.;
+  eqf  (Nice.step_ceil ~step:2. 0.) 0.;
+  eqf  (Nice.step_ceil ~step:2. (-0.5)) 0.;
+  eqf  (Nice.step_ceil ~step:2. (-1.5)) 0.;
+  eqf  (Nice.step_ceil ~step:2. (-2.5)) (-2.);
+  eqf  (Nice.step_ceil ~step:2. (-3.5)) (-2.);
+  eqf  (Nice.step_ceil ~step:2. (-4.5)) (-4.);
+  raises (Nice.step_round ~step:(-0.1)) 2.; 
+  eqf  (Nice.step_round ~step:2. 5.5) 6.;
+  eqf  (Nice.step_round ~step:2. 5.0) 6.;
+  eqf  (Nice.step_round ~step:2. 4.9) 4.;
+  eqf  (Nice.step_round ~step:2. 4.5) 4.;
+  eqf  (Nice.step_round ~step:2. 2.5) 2.;
+  eqf  (Nice.step_round ~step:2. 2.) 2.;
+  eqf  (Nice.step_round ~step:2. 1.) 2.;
+  eqf  (Nice.step_round ~step:2. 0.9) 0.;
+  eqf  (Nice.step_round ~step:2. 0.) 0.;
+  eqf  (Nice.step_round ~step:2. (-0.5)) 0.;
+  eqf  (Nice.step_round ~step:2. (-1.0)) 0.;
+  eqf  (Nice.step_round ~step:2. (-1.1)) (-2.);
+  eqf  (Nice.step_round ~step:2. (-2.5)) (-2.);
+  eqf  (Nice.step_round ~step:2. (-3.0)) (-2.);
+  eqf  (Nice.step_round ~step:2. (-3.5)) (-4.);
+  eqf  (Nice.step_round ~step:2. (-4.5)) (-4.);
+  let str_list acc prec v = (Printf.sprintf "%.*f" prec v :: acc) in
+  raises (Nice.step_fold ~step:0. str_list [] (-0.1)) (3.);
+  let result = ["0.3"; "0.2"; "0.1"; "0.0"; "-0.1"] in
+  assert (Nice.step_fold ~step:0.1 str_list [] (-0.1) 0.3 = result);
+  assert (Nice.step_fold ~step:0.1 str_list [] 0.3 (-0.1) = List.rev result);
+  assert (Nice.step_fold ~step:0.1 str_list [] 0.32 (-0.11) = List.rev result);
+  assert (Nice.step_fold ~step:0.1 str_list [] (-0.11) 0.32 = result);
+  assert (Nice.step_fold ~step:0.1 str_list [] (-0.11) 0.39 = result);
+  assert (Nice.step_fold ~step:0.1 str_list [] (-0.3) (-0.3) = [ "-0.3"]);
+  assert (Nice.step_fold ~step:0.1 str_list [] (-0.31) (-0.31) = []);
+  assert (Nice.step_outset ~step:1. (-1.11) (2.22) = (-2., 3.));
+  assert (Nice.step_outset ~step:1. (2.22) (-1.11) = (3., -2.));
+  assert (Nice.step_inset ~step:1. (-1.11) (2.22) = (-1., 2.));
+  assert (Nice.step_inset ~step:1. (2.22) (-1.11) = (2., -1.));
+  ()
+      
+  
+    
 
 (* Scales *)
 
@@ -50,6 +117,7 @@ let test_scale_linear () =
   assert (sf (-2.) = 1.);
   ()
   
+
 
 (* Colors *)
   
@@ -120,6 +188,7 @@ let test_qual () =
     
 let test () =
   Printexc.record_backtrace true; 
+  test_nice ();
   test_scale_linear ();
 (*
   TODO uncomment

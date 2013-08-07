@@ -123,57 +123,63 @@ module Stat : sig
       and [s5] on the data. *)
 end
 
-(** {1:nice Nice numbers} *)
+val linear_sample : float -> float -> float -> float list
 
+(** {1 Nicing numbers} *)
+
+(** Nicing numbers.
+
+    Nice numbers for nice labels and ticks. *)
 module Nice : sig
 
-  (** {1:quantize Quantize} *)
+  (** {1:steps Nice steps} *)
 
-  val step_floor : float -> float -> float 
-  (** [step_floor step v] is the greatest number [v'] such 
-      that [v' <= v] and [v' /. step] is integral. *)
+  val step : int -> float -> float -> float 
+  (** [step n v0 v1] is a nice step size for sampling the directed interval 
+      \[[v0];[v1]\] {e approximatively} [n] times. The step value belongs to 
+      the set \{ q⋅10{^z} | q ∈ \{1,2,5\} and z ∈ Z \}. Returns [0.] if 
+      [v0 = v1]. 
 
-  val step_ceil : float -> float -> float 
-  (** [ceil_floor step v] is the smallest number [v'] such 
-      that [v <= v'] and [v' /. step] is integral. *)
+      @raise Invalid_argument if [n] is not strictly positive. *)
 
-  val step_round : float -> float -> float 
-  (** [ceil_round step v] is either {!step_floor} or {!ceil_floor} 
+  (** {1:quantize Quantized nicing} 
+
+      Given a positive step size [step] the following functions nice
+      numbers so that they belong to the set Q([step]) = \{ z⋅[step]
+      | z ∈ Z \}. 
+
+      {b Warning.} All these functions raise [Invalid_argument] if
+      [step] is not strictly positive. *)
+
+  val step_floor : step:float -> float -> float 
+  (** [step_floor step v] is the greatest [v'] such 
+      that [v' <= v] and [v'] ∈ Q([step]). *)
+
+  val step_ceil : step:float -> float -> float 
+  (** [step_ceil step v] is the smallest [v'] such
+      that [v <= v'] and [v'] ∈ Q([step]). *)
+
+  val step_round : step:float -> float -> float 
+  (** [step_round step v] is either [step_floor v] or [ceil_floor v]
       whichever is the nearest. Ties are rounded towards positive infinity. *)
 
-  (** {1:nice Nicing} 
+  val step_fold : step:float -> ('a -> int -> float -> 'a) -> 'a -> float -> 
+    float -> 'a
+  (** [step_fold step f acc v0 v1] folds [f] over set of numbers 
+      Q([step]) ∩ \[[v0];[v1]\]. Folding is performed in order and in 
+      the direction from [v0] to [v1]. The integer given to [f]
+      is the fractional precision of the numbers mandated by [step]. *)
 
-      A {e nice number} is a number that belongs to the set 
-      \{ q⋅10{^z} | q ∈ \{1,2,5\} and z ∈ Z \}.
+  val step_outset : step:float -> float -> float -> (float * float)
+  (** [step_outset step v0 v1] {e expands} the directed 
+      interval \[[v0];[v1]\] to [(v0',v1')] ∈ Q([step]){^2} where
+      [v0'] (resp. [v1']) is the nearest number to [v0] (resp. [v1]). *)
 
-      {b Warning.} The nice number set is subject to change
-      do not use these functions if you require absolute 
-      reproducibility. *)
+  val step_inset : step:float -> float -> float -> (float * float)
+  (** [step_inset step v0 v1] {e shrinks} the directed 
+      interval \[[v0];[v1]\] to [(v0',v1')] ∈ Q([step]){^2} where
+      [v0'] (resp. [v1']) is the nearest number to [v0] (resp. [v1]). *)
 
-  val floor : float -> float 
-  (** [floor v] is the smallest number [v'] such that [v' <= v] and 
-      [v'] is a nice number. *)
-      
-  val ceil : float -> float 
-  (** [ceil v] is the smallest number [v'] such that [v <= v'] and 
-      [v'] is a nice number. *)
-
-  val round : float -> float     
-  (** [round v] is either {!floor} or {!ceil} 
-      whichever is the nearest. Ties are rounded towards positive 
-      infinity. *)
-    
-  val sample : min:float -> max:float -> int -> float * float list 
-  (** [sample min max n] samples the interval \[[min;max]\] 
-      {e approximatively} [n] times at uniformely spaced nice numbers. 
-      TODO fold instead of list. *)
-
-  val bounds : min:float -> max:float -> float * float
-  (** [bounds min max] expands the interval \[[min;max]\] to 
-      [(min', max')]\]
-      whose precision is one order of magnitude less than the 
-      extent of the domain that is: 10{^(round
-         (log{_10} (max - min)) - 1)}. *)
 end
 
 (** {1:scales Scales} *)
@@ -224,8 +230,8 @@ module Scale : sig
   (** [partial_map s] is like [map s] except on ordinal scales 
       it returns [None] on undefined argument. *)
 
-  val ticks : ?bounds:bool -> ('a -> float -> 'a) -> 'a -> 
-    (float, float) scale -> int -> 'a 
+  val ticks : int -> ('a -> int -> float -> 'a) -> 'a -> 
+    (float, 'b) scale -> int -> 'a 
   (** [ticks bounds f acc scale n] is the result of folding 
       [f] over {e approximatively} [count] uniformly
       spaced values taken in [scale]'s domain. If [bounds] is [true]

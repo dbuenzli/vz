@@ -25,8 +25,10 @@ open Vg
 let str = Printf.sprintf 
 let err_scheme_size ssize s = str "scheme size %d exceeded (%d)" ssize s
 let err_interval (lo, hi) = str "invalid interval: ... %f, %f ..." lo hi
-
-let vz_eps = 1e-9
+let err_not_ipos n = str "%d is not a positive integer" n
+let err_step s = str "step size is not positive (%f)" s
+let err_bounds min max = 
+  str "lower bound %f greater than upper bound %f" min max
 
 (* Statistics *)
 
@@ -201,81 +203,116 @@ module Stat = struct
     { value; add = add s1 s2 s3 s4 s5 }    
 end
 
-let linear_sample min max step = (* assert (x0 < x1) *)
-  let countf = (max -. min) /. step in 
-  let count = Pervasives.floor countf in
-  if Float.is_nan count then invalid_arg "nan count TODO" else
+let linear_sample min max step = (* assert (min <= max) *)
+  let countf = (max -. min) /. step in
+  let count = 
+    let count = Float.round countf in
+    if Float.is_zero ~eps:step ((min +. step *. count) -. max) then count else 
+    floor countf
+  in
   let rec loop i acc = 
     if i < 0. then acc else loop (i -. 1.) ((min +. i *. step) :: acc)
   in
   loop count []
 
 (* Nice numbers *)
+
 module Nice = struct
-  
-  let step_floor step x = floor (x /. step) *. step 
-  let step_ceil step x = ceil (x /. step) *. step
-  let step_round step x = Float.round (x /. step) *. step
 
-  (* References.
-
+  (* Draws from (but not the same as):
+     
      P. Heckbert. Nice numbers for graph labels. 
      In A. Glassner, editor, Graphics Gems, pages 61–63 657–659. 
      Academic Press, Boston, 1990.
-  
+     
+     Could be interesting to look at:
+     
      An Extension of Wilkinson’s Algorithm for Positioning Tick Labels on Axes
      Justin Talbot, Sharon Lin, Pat Hanrahan
-     IEEE Trans. Visualization & Comp. Graphics (Proc. InfoVis), 2010 *)
-
-  let ceil x = 
-    let exp = Pervasives.floor (log10 x) in 
-    let omag = 10. ** exp in
-    let frac = x /. omag in
+     IEEE Trans. Visualization & Comp. Graphics (Proc. InfoVis), 2010 *) 
+      
+  let nicenum ~round v = 
+    let exp = floor (log10 v) in 
+    let omag = 10. ** exp in 
+    let frac = v /. omag in
     let nice_frac = 
-      if frac <= 1. then 1. else 
-      if frac <= 2. then 2. else 
-      if frac <= 5. then 5. else
-      10.
+      if round then begin
+        if frac < 1.5 then 1. else 
+        if frac < 3.5 then 2. else 
+        if frac < 7.5 then 5. else
+        10.
+      end else begin 
+        if frac <= 1. then 1. else 
+        if frac <= 2. then 2. else 
+        if frac <= 5. then 5. else 
+        10.
+      end
     in
     nice_frac *. omag
 
-  let floor x = 
-    let exp = Pervasives.floor (log10 x) in 
-    let omag = 10. ** exp in
-    let frac = x /. omag in
-    let nice_frac = 
-      if frac < 2. then 1. else 
-      if frac < 5. then 2. else 
-      if frac < 10. then 5. else
-      10.
+  let step n v0 v1 = 
+    if n < 1 then invalid_arg (err_not_ipos n) else
+    if n = 1 then nicenum ~round:true (0.5 *. abs_float (v1 -. v0)) else
+    let ext = nicenum ~round:false (abs_float (v1 -. v0)) in
+    nicenum ~round:true (ext /. (float (n - 1)))
+
+  (* Quantized *)
+
+  let step_floor ~step v = 
+    if step <= 0. then invalid_arg (err_step step) else
+    floor (v /. step) *. step
+      
+  let step_ceil ~step x = 
+    if step <= 0. then invalid_arg (err_step step) else
+    ceil (x /. step) *. step
+      
+  let step_round ~step x = 
+    if step <= 0. then invalid_arg (err_step step) else
+    Float.round (x /. step) *. step
+      
+  let step_bounds ~step ~inset v0 v1 =    
+    if step <= 0. then invalid_arg (err_step step) else
+    let v0 = 
+      let v0r = step_round ~step v0 in 
+      if Float.is_zero ~eps:(step *. 1e-9) (v0 -. v0r) then v0r else 
+      if inset 
+      then if v0 < v1 then step_ceil ~step v0 else step_floor ~step v0
+      else if v0 < v1 then step_floor ~step v0 else step_ceil ~step v0
     in
-    nice_frac *. omag
-
-  let round x = 
-    let exp = Pervasives.floor (log10 x) in 
-    let omag = 10. ** exp in
-    let frac = x /. omag in
-    let nice_frac =
-      if frac < 1.5 then 1. else 
-      if frac < 3.5 (* Heckbert uses 3. *) then 2. else 
-      if frac < 7.5 (* Hecbkert uses 7. *) then 5. else 
-      10.
+    let v1 = 
+      let v1r = step_round ~step v1 in 
+      if Float.is_zero ~eps:(step *. 1e-9) (v1 -. v1r) then v1r else 
+      if inset 
+      then if v0 < v1 then step_floor ~step v1 else step_ceil ~step v1 
+      else if v0 < v1 then step_ceil ~step v1 else step_floor ~step v1
     in
-    nice_frac *. omag
-
-  let sample ~min ~max n =                 (* modified version of Heckbert. *)
-    let exts = ceil (max -. min) in 
-    let step = round (exts /. (float (n - 1))) in
-    let min = step_ceil step min in 
-    let max = step_floor step max in 
-    let nfrac = Pervasives.max (-. floor(log10 exts)) 0. in 
-    nfrac, linear_sample min max step
-
-  let bounds ~min ~max =
-    if min = max then min, min else 
-    let exts = max -. min in 
-    let nice_step = 10. ** (Float.round (log10 exts) -. 1.) in 
-    step_floor nice_step min, step_ceil nice_step max 
+    v0, v1
+    
+  let step_fold ~step f acc v0 v1 = 
+    if step <= 0. then invalid_arg (err_step step) else
+    let prec = int_of_float (max (-. floor (log10 (abs_float (step)))) 0.) in
+    if v0 = v1 then
+      let v0r = step_round ~step v0 in 
+      if Float.is_zero ~eps:(step *. 1e-9) (v0 -. v0r) then f acc prec v0 else 
+      acc
+    else
+    let v0, v1 = step_bounds ~step ~inset:true v0 v1 in
+    let exts = v1 -. v0 in
+    let sstep = copysign step exts in
+    let countf = exts /. sstep in
+    let count = 
+      let count = Float.round countf in
+      if Float.is_zero ~eps:(step *. 1e-9) ((v0 +. sstep *. count) -. v1) 
+      then count else floor countf
+    in
+    let rec loop i acc = 
+      if i > count then acc else loop (i +. 1.) (f acc prec (v0 +. i *. sstep))
+    in
+    loop 0. acc
+          
+  let step_outset ~step v0 v1 = step_bounds ~step ~inset:false v0 v1 
+  let step_inset ~step v0 v1 = step_bounds ~step ~inset:true v0 v1 
+                                
 end
 
 (* Scale *)
@@ -326,9 +363,9 @@ module Scale = struct
 
 
   let linear_ticks ?(bounds = false) x0 x1 n = (* assert (x0 < x1) *)
-    Nice.sample x0 x1 n
+    failwith "TODO"
       
-  let ticks ?(bounds = false) f acc scale n  = failwith "TODO"
+  let ticks n f acc scale = failwith "TODO"
 
   let linear_map ~clamp d r = match d, r with 
   | [x0; x1], [y0; y1] -> 
