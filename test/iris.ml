@@ -15,7 +15,9 @@ let log fmt =
 
 (* Style *)
 
-let font = Font.create "OpenSans" 3.25
+let font = 
+  { Font.name = "OpenSans"; size = 3.25; slant = `Normal; weight = `W400 }
+
 let lgray = I.const (Color.gray 0.75)
 
 (* Data *)
@@ -126,7 +128,7 @@ let image =
       if xi <> yi 
       then xyplot ~pad ~size ~x ~y (getter species) cmap Iris_data.sample I.void
       else
-      let lpos = V2.v (1.6 *. pad) (0.5 *. (size -. Font.size font)) in
+      let lpos = V2.v (1.6 *. pad) (0.5 *. (size -. font.Font.size)) in
       (I.const Color.black) >> 
       I.cut_glyphs ~text:(label x_col) font [] >> I.move lpos
     in
