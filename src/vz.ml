@@ -337,7 +337,6 @@ module Scale = struct
   let partial_map s = 
     let f = s.map in
     fun v -> try Some (f v) with Invalid_argument _ -> None 
-    
           
   let extents xs = match xs with 
   | (x0 :: xs) ->
@@ -361,11 +360,21 @@ module Scale = struct
     let xn' = (if rev then floor else ceil) (xn /. mag_order) *. mag_order in
     x0' :: List.rev (xn' :: xs_rev)
 
-
-  let linear_ticks ?(bounds = false) x0 x1 n = (* assert (x0 < x1) *)
-    failwith "TODO"
       
-  let ticks n f acc scale = failwith "TODO"
+  let fold_ticks ?(bounds = false) n f acc scale = match scale.dom with 
+  | `Discrete _ -> failwith "TODO discrete fold ticks" 
+  | `Intervals [x0; x1] ->
+      let step = Nice.step n x0 x1 in 
+      if step = 0. then acc (* TODO *)
+      else
+      if not bounds then Nice.step_fold ~step f acc x0 x1 else
+      let prec = int_of_float (max (-. floor (log10 (abs_float (step)))) 0.) in
+      let x0', x1' = Nice.step_inset ~step x0 x1 in 
+      let acc = f acc prec x0 in 
+      let acc = Nice.step_fold ~step f acc x0' x1' in 
+      f acc prec x1
+  | _ -> assert false 
+    
 
   let linear_map ~clamp d r = match d, r with 
   | [x0; x1], [y0; y1] -> 
@@ -413,8 +422,6 @@ module Scale = struct
       dom_raw = `Discrete d; 
       range = `Discrete r; clamp = false; nice = false }
     
-    
-
   let range_pts ?rpad ~min ~max n = failwith "TODO"
   let range_bands ?rpad ?pad ~min ~max n = failwith "TODO"
 end

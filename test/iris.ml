@@ -13,14 +13,33 @@ let log fmt =
   let flush _ = Firebug.console ## log (flush ()) in
   Format.kfprintf flush Format.str_formatter fmt
 
+(* Style *)
+
+let font = Font.create "OpenSans" 3.25
+let lgray = I.const (Color.gray 0.75)
+
+(* Data *)
+
 let label = fst
 let getter = snd
 let species = "species", (fun (_, _, _, _, s) -> s)
-let traits = List.rev
+let traits =
   [ "sepal length (cm)", (fun (l, _, _, _, _) -> l);
     "sepal width (cm)",  (fun (_, w, _, _, _) -> w);
     "petal length (cm)", (fun (_, _, l, _, _) -> l);
     "petal width (cm)",  (fun (_, _, _, w, _) -> w); ]  
+
+let corners size box p = (* path for ⌜ ⌝ ⌞ ⌟ *)
+  let dx, neg_dx = V2.v size 0., V2.v (-. size) 0. in 
+  let dy, neg_dy = V2.v 0. size, V2.v 0. (-. size) in
+  let minx, maxx = Box2.minx box, Box2.maxx box in 
+  let miny, maxy = Box2.miny box, Box2.maxy box in 
+  let line dv = P.line ~rel:true dv in
+  p >> 
+  P.sub (P2.v minx (maxy -. size)) >> line dy >> line dx >>
+  P.sub (P2.v (maxx -. size) maxy) >> line dx >> line neg_dy >>
+  P.sub (P2.v maxx (miny +. size)) >> line neg_dy >> line neg_dx >>
+  P.sub (P2.v (minx +. size) miny) >> line neg_dx >> line dy 
 
 let species_stats data = 
   let column_range col = Stat.range (getter col) in
@@ -43,49 +62,80 @@ let xyset_scales ~pad ~size x y =
   in
   let xs xi x = List.mapi (xy_scale xi x) y in
   List.concat (List.mapi xs x)
-
-let font = Font.create "OpenSans" 2.2
-let labeli col = I.cut_glyphs ~text:(label col) font [] (I.const Color.black) 
-
+  
 let image =
-  let size = 35. in
-  let pad = 4.5 in
   let trait_count = List.length traits in
   let trait_ranges, species_range = species_stats Iris_data.sample in
   let traits = List.combine traits trait_ranges in
   let species_count = List.length species_range in
+  let image_size = 160. in
+  let size = (image_size /. (float trait_count)) in 
+  let pad = size *. 0.1125 in
   let colors = Colors.qual_fixed ~a:0.8 ~size:species_count `Brewer_set2_8 in
   let cmap = Scale.map (Scale.ordinal species_range (Array.to_list colors)) in
   let xyset_scales = xyset_scales ~pad ~size traits traits in
   let add_ticks acc ((xi, _, xscale), (yi, _, yscale)) = 
-    let xticks = if xi <> 0. then I.void else I.void in
-    let yticks = if yi <> 0. then I.void else I.void in
+    let xticks = 
+      if yi <> 0. then I.void else
+      let x = Scale.map xscale in
+      let y = Scale.map yscale in
+      let add_tick acc prec t =
+        let label = Printf.sprintf "%.*f" prec t in
+        log "%s" label;
+        let pos = V2.v (x t) (0.4 *. pad) in 
+        let area = `O { P.o with P.width = 0.2; } in
+        acc >> 
+        I.blend (I.cut ~area (Mark.vtick ~pos ~valign:`Center 2.0) lgray) 
+(*        I.blend (I.cut_glyphs *)
+      in
+      let pos = V2.v (xi *. size) 0. in
+      Scale.fold_ticks ~bounds:false 5 add_tick I.void xscale >> I.move pos
+    in
+    let yticks = 
+      if xi <> 0. then I.void else
+      let x = Scale.map xscale in
+      let y = Scale.map yscale in
+      let add_tick acc prec t =
+        log "%.*f" prec t;
+        let pos = V2.v (0. *. pad) (y t) in 
+        let area = `O { P.o with P.width = 0.2; } in
+        acc >> 
+        I.blend (I.cut ~area (Mark.htick ~pos ~halign:`Center 2.0) lgray)
+      in
+      let pos = V2.v (0.) (yi *. size) in
+      Scale.fold_ticks ~bounds:false 5 add_tick I.void yscale >> I.move pos
+    in
     acc >> I.blend xticks >> I.blend yticks
   in
   let add_xy acc ((xi, x_col, xscale), (yi, y_col, yscale)) =
     let hpad, _ as range = 0.5 *. pad, size -. 0.5 *. pad in
     let frame = 
       let s = size -. pad in
-      let bounds = P.empty >> P.rect (Box2.v (P2.v hpad hpad) (Size2.v s s)) in
-      let area = `O { P.o with P.width = 0.2; } in
-      I.cut ~area bounds (I.const (Color.gray 0.75))
+      let bounds = Box2.v (P2.v hpad hpad) (Size2.v s s) in 
+      let pbounds = P.empty >> corners pad bounds in
+      let area = `O { P.o with P.width = 0.15; } in
+      let pbounds = pbounds >> P.rect bounds in
+      I.cut ~area pbounds lgray
     in
     let xmap = Scale.map xscale in
     let ymap = Scale.map yscale in
     let x v = xmap ((getter x_col) v) in 
     let y v = ymap ((getter y_col) v) in
-    let pos = V2.v (xi *. size) (yi *. size) in
-    let plot = xyplot ~pad ~size ~x ~y (getter species) cmap Iris_data.sample in
-    let lpos = V2.v (V2.x pos +. pad) (V2.y pos +. size -. 1.5 *. pad) in
-    let label = if xi = yi then labeli x_col else I.void in 
-    acc >> I.blend (frame >> plot >> I.move pos) >> 
-    I.blend (label >> I.move lpos)
+    let pos = V2.v (xi *. size) (image_size -. (yi +. 1.) *. size) in
+    let img = 
+      if xi <> yi 
+      then xyplot ~pad ~size ~x ~y (getter species) cmap Iris_data.sample I.void
+      else
+      let lpos = V2.v (1.6 *. pad) (0.5 *. (size -. Font.size font)) in
+      (I.const Color.black) >> 
+      I.cut_glyphs ~text:(label x_col) font [] >> I.move lpos
+    in
+    acc >> I.blend (frame >> I.blend img >> I.move pos)
   in
   let grid = List.fold_left add_ticks I.void xyset_scales in
   let image = List.fold_left add_xy grid xyset_scales in
-  let side = size *. (float trait_count) +. pad in
-  let view = Box2.v P2.o (Size2.v (side +. size) side) in 
-  let size = Size2.v 200. 160. (* mm *) in 
+  let view = Box2.v P2.o (Size2.v image_size image_size) in
+  let size = Size2.v image_size image_size (* mm *) in 
   `Image (size, view, image) 
   
 (* Browser bureaucracy. *)

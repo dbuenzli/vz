@@ -123,8 +123,6 @@ module Stat : sig
       and [s5] on the data. *)
 end
 
-val linear_sample : float -> float -> float -> float list
-
 (** {1 Nicing numbers} *)
 
 (** Nicing numbers.
@@ -136,8 +134,8 @@ module Nice : sig
 
   val step : int -> float -> float -> float 
   (** [step n v0 v1] is a nice step size for sampling the directed interval 
-      \[[v0];[v1]\] {e approximatively} [n] times. The step value belongs to 
-      the set \{ q⋅10{^z} | q ∈ \{1,2,5\} and z ∈ Z \}. Returns [0.] if 
+      \[[v0];[v1]\] {e approximatively} [n] times. The step size is in
+      the set \{ q⋅10{^z} | q ∈ \{1,2,5\} and z ∈ Z \} or [0] if 
       [v0 = v1]. 
 
       @raise Invalid_argument if [n] is not strictly positive. *)
@@ -230,12 +228,13 @@ module Scale : sig
   (** [partial_map s] is like [map s] except on ordinal scales 
       it returns [None] on undefined argument. *)
 
-  val ticks : int -> ('a -> int -> float -> 'a) -> 'a -> 
-    (float, 'b) scale -> int -> 'a 
-  (** [ticks bounds f acc scale n] is the result of folding 
-      [f] over {e approximatively} [count] uniformly
-      spaced values taken in [scale]'s domain. If [bounds] is [true]
-      makes sure that the actual bounds of the domain are included. *)
+  val fold_ticks : ?bounds:bool -> int -> ('a -> int -> float -> 'a) -> 'a -> 
+    (float, 'b) scale -> 'a 
+  (** [fold_ticks bounds n f acc scale] folds [f] over {e approximatevely} [n]
+      uniformly spaced values taken in [scale]'s domain using {!Nice.step} 
+      to determine the step value. See {!Nice.step_fold}. If [bounds] 
+      is [true] ensures that the bounds of the domain are folded over.
+  *)
 
   (** {1 Linear scales} *)
 
@@ -266,6 +265,8 @@ module Scale : sig
       piecewise linear function defined by dom and range (which must
       have the same length). See {!linear}. *)
 *)
+
+
   (** {1 Ordinal scales} 
 
       Ordinal scales maps a discrete orderable domain to a range. *)
@@ -287,11 +288,7 @@ end
 
 (** {1 Image and path helpers} *) 
 
-(*
-module Path : sig
-  val circle : ?c:v2 -> float -> Vg.path
-end
-*)
+
 (** Marks. 
 
     This module provides a few convenience combinators to create
@@ -308,6 +305,7 @@ module Mark : sig
   (** The type for vertical alignements. *)
 
 (*
+  type orientation = [ `Left | `Top | `Right | `Bottom ]
   type hdir = [ `Left | `Right ] 
   type vdir = [ `Up | `Down ]
 *)
@@ -360,29 +358,21 @@ module Mark : sig
   (** [cros w] is a plus sign of length [w] rotated by 45°. *)
 *)
 
+
 end
 
 (*
-type 'a axis 
-(** The type for axes for values of type 'a. *)
-*)
+type axis 
 
-(*
 module Axis : sig
 
-  type 'a t = 'a axis
+  type orientation = [ `Right | `Top | `Left | `Bottom ] 
+  type tick_spec = [ `Count of int | `Values of 
 
-  val v : ('a, float) Vz.scale -> 'a scale  
-  val h : ('a, float) Vz.scale -> 'a scale
-
-  val fold_ticks : ?at:float -> [`H | `V ] -> 
-    ('a -> Gg.p2 -> Vg.image) -> ('a, float) Vz.scale -> 
-
-
-  val cut_ticks : ?outline:P.outline -> I.image -> Vz.scale -> 
+  val of_scale : ?ticks:?orient:orientation -> ('a, 'b) scale ->
+ 
 end
 *)
-
 
 (** {1 Colors schemes} *)
 
