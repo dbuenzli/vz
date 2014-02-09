@@ -11,6 +11,7 @@ NATIVE=$1
 
 add lib pkg/META		
 add lib src/vz.mli	
+add lib src/vz.cmti
 add lib src/vz.cmi
 add lib src/vz.cmx
 add lib src/vz.cma
