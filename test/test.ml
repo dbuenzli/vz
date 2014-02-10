@@ -1,7 +1,7 @@
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%. All rights reserved.
+   Copyright (c) 2013 Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
-   %%NAME%% version %%VERSION%%
+   %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 open Gg
@@ -201,7 +201,7 @@ let () = if not (!Sys.interactive) then test ()
  
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright (c) 2013 Daniel C. Bünzli
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
