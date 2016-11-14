@@ -11,7 +11,7 @@ open Vg
 
 let log fmt =
   let flush () = Js.string (Format.flush_str_formatter ()) in
-  let flush _ = Firebug.console ## log (flush ()) in
+  let flush _ = Firebug.console ## (log (flush ())) in
   Format.kfprintf flush Format.str_formatter fmt
 
 (* Color schemes to display. *)
@@ -102,13 +102,13 @@ let image =
 (* Browser bureaucracy. *)
 
 let main _ = 
-  let d = Dom_html.window ## document in 
+  let d = Dom_html.window ##. document in 
   let a = 
     let a = Dom_html.createA d in 
-    a ## title <- Js.string "Download PNG file";
-    a ## href <- Js.string "#"; 
-    a ## setAttribute (Js.string "download", Js.string "minc.png");
-    Dom.appendChild (d ## body) a; a
+    a ##. title := Js.string "Download PNG file";
+    a ##. href := Js.string "#"; 
+    a ## (setAttribute (Js.string "download") (Js.string "minc.png"));
+    Dom.appendChild (d ##. body) a; a
   in 
   let c = 
     let c = Dom_html.createCanvas d in 
@@ -116,10 +116,10 @@ let main _ =
   in 
   let r = Vgr.create (Vgr_htmlc.target c) `Other in 
   assert(Vgr.render r (`Image (size, view, image)) = `Ok); 
-  a ## href <- (c ## toDataURL ());
+  a ##. href := (c ## toDataURL);
   Js._false
 
-let () = Dom_html.window ## onload <- Dom_html.handler main
+let () = Dom_html.window ##. onload := Dom_html.handler main
 
 
 (*---------------------------------------------------------------------------

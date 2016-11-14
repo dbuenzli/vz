@@ -1,9 +1,9 @@
 opam-version: "1"
 maintainer: "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
 homepage: "http://erratique.ch/software/vz"
-authors: ["Daniel Bünzli <daniel.buenzli i@erratique.ch>"]
+authors: ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
 doc: "http://erratique.ch/software/vz/doc/Vz"
-tags: [ "visualization" "declarative" "graphics" ]
+tags: [ "visualization" "declarative" "graphics" "org:erratique" ]
 license: "BSD3"
 depends: [ "gg" "vg" ]
 ocaml-version: [>= "4.00.0"]
