@@ -1,4 +1,4 @@
-<**/*.{ml,mli}> : annot
+true : bin_annot, safe_string
 
 true : package(gg), package(vg)
 
