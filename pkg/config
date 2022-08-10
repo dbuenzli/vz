@@ -1,4 +1,0 @@
-NAME=vz
-VERSION=`git describe master | sed "s/^.//"`
-MAINTAINER="Daniel Bünzli <daniel.buenzl i\\\@erratique.ch>"
-WWWDEMOS="iris color_schemes"

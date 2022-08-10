@@ -1,18 +1,31 @@
-opam-version: "1"
+opam-version: "2.0"
+name: "vz"
+synopsis: "Declarative data visualization for OCaml"
+description: """\
+Declarative data visualization with Vg.
+
+Vz depends on [Gg][1] and [Vg][2]. It is distributed under the ISC
+license.
+
+[1]: http://erratique.ch/software/gg
+[2]: http://erratique.ch/software/vg
+
+Homepage: http://erratique.ch/software/vz"""
 maintainer: "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
-homepage: "http://erratique.ch/software/vz"
-authors: ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
-doc: "http://erratique.ch/software/vz/doc/Vz"
-tags: [ "visualization" "declarative" "graphics" "org:erratique" ]
-license: "BSD3"
-depends: [ "gg" "vg" ]
-ocaml-version: [>= "4.00.0"]
-build: 
-[
-  ["./pkg/pkg-git" ] 
-  ["./pkg/build" "true" ]
+authors: "The vz programmers"
+license: "ISC"
+tags: ["graphics" "visualization" "declarative" "graphics" "org:erratique"]
+homepage: "https://erratique.ch/software/vz"
+doc: "https://erratique.ch/software/vz/doc/"
+bug-reports: "https://github.com/dbuenzli/vz/issues"
+depends: [
+  "ocaml" {>= "4.14.0"}
+  "ocamlfind" {build}
+  "ocamlbuild" {build}
+  "topkg" {build & >= "1.0.3"}
+  "gg" {>= "1.0.0"}
+  "vg" {>= "0.9.4"}
+  "brr" {with-test}
 ]
-build-test:
-[
-  ["./pkg/test"]
-]
+build: ["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"]
+dev-repo: "git+https://erratique.ch/repos/vz.git"

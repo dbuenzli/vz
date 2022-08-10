@@ -1,0 +1,32 @@
+{0 Vz {%html: <span class="version">%%VERSION%%</span>%}}
+
+Vz provides tools to map your data to Vg images.
+
+{1:manuals Manuals}
+
+A few things are {{!todo}TODO}.
+
+{1:vz The [vz] and [vz.plot] libraries}
+
+{!modules:
+Vz
+Vz_plot
+Evidence
+}
+
+{1:samples The [evidence.samples] library}
+
+A few sample datasets to play with.
+{!modules:
+Evidence_iris
+Evidence_diamonds
+}
+
+{1:todo TODO}
+
+- Split away [evidence] in its own library. Provide a tool
+  to crunch data into a module.
+- A tutorial
+- Review the subsetting on {!Vz.Colors.val-qual_fixed} I'm not convinced.
+  Also sort out that internal lazy stuff (jsoo?).
+- Add more color schemes.

@@ -1,8 +1,42 @@
-version = "%%VERSION%%"
 description = "Declarative data visualization for OCaml"
+version = "%%VERSION_NUM%%"
+
 requires = "gg vg"
 archive(byte) = "vz.cma"
-archive(byte, plugin) = "vz.cma"
 archive(native) = "vz.cmxa"
-archive(native, plugin) = "vz.cmxs"
+plugin(byte) = "vz.cma"
+plugin(native) = "vz.cmxs"
 exists_if = "vz.cma"
+
+package "evidence" (
+  description = "Rectangular data processing"
+  archive(byte) = "evidence.cma"
+  archive(native) = "evidence.cmxa"
+  plugin(byte) = "evidence.cma"
+  plugin(native) = "evidence.cmxs"
+  exists_if = "evidence.cma"
+)
+
+package "plot" (
+  description = "Quick cartesian plots of datasets"
+  version = "%%VERSION_NUM%%"
+  directory = "plot"
+  requires = "gg vg vz evidence"
+  archive(byte) = "vz_plot.cma"
+  archive(native) = "vz_plot.cmxa"
+  plugin(byte) = "vz_plot.cma"
+  plugin(native) = "vz_plot.cmxs"
+  exists_if = "vz_plot.cma"
+)
+
+package "samples" (
+  description = "Evidence sample data"
+  version = "%%VERSION_NUM%%"
+  directory = "samples"
+  requires = "evidence"
+  archive(byte) = "evidence_samples.cma"
+  archive(native) = "evidence_samples.cmxa"
+  plugin(byte) = "evidence_samples.cma"
+  plugin(native) = "evidence_samples.cmxs"
+  exists_if = "evidence_samples.cma"
+)

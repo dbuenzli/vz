@@ -1,10 +1,5 @@
 true : bin_annot, safe_string
-
-true : package(gg), package(vg)
-
+<_b0> : -traverse
 <src> : include
-<test> : include
-<test/*> : debug
 
-<test/{iris,color_schemes,cam}.*> : package(vg.htmlc), \
-  package(js_of_ocaml), package(js_of_ocaml.ppx)
+<src/*> : package(gg), package(vg)
