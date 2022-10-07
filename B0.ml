@@ -3,6 +3,7 @@ open B0_kit.V000
 (* OCaml library names *)
 
 let gg = B0_ocaml.libname "gg"
+let gg_kit = B0_ocaml.libname "gg.kit"
 let vg = B0_ocaml.libname "vg"
 
 let evidence = B0_ocaml.libname "evidence"
@@ -28,12 +29,12 @@ let evidence_samples_lib =
 
 let vz_lib =
   let srcs = Fpath.[ `File (v "src/vz.mli"); `File (v "src/vz.ml") ] in
-  let requires = [gg; vg] in
+  let requires = [gg; gg_kit; vg] in
   B0_ocaml.lib vz ~doc:"The vz library" ~srcs ~requires
 
 let vz_plot_lib =
   let srcs = Fpath.[`File (v "src/vz_plot.mli"); `File (v "src/vz_plot.ml")] in
-  let requires = [gg; vg; vz; evidence] in
+  let requires = [gg; gg_kit; vg; vz; evidence] in
   B0_ocaml.lib vz_plot ~doc:"The vz.plot library" ~srcs ~requires
 
 (* Tests *)
@@ -42,7 +43,7 @@ let test_exe ?(requires = []) src ~doc =
   let src = Fpath.v src in
   let srcs = Fpath.[`File src] in
   let meta = B0_meta.(empty |> tag test) in
-  let requires = gg :: vg :: vz :: requires in
+  let requires = gg :: gg_kit :: vg :: vz :: requires in
   B0_ocaml.exe (Fpath.basename ~no_ext:true src) ~srcs ~doc ~meta ~requires
 
 let test = test_exe "test/test.ml" ~doc:"Vz tests"
@@ -53,7 +54,7 @@ let vg_htmlc = B0_ocaml.libname "vg.htmlc"
 let test_with_brr ?(requires = []) src ~doc =
   let src = Fpath.v src in
   let srcs = Fpath.[`File src; `File (v "test/style.css")] in
-  let requires = gg :: vg :: vz :: vg_htmlc :: brr :: requires in
+  let requires = gg :: gg_kit :: vg :: vz :: vg_htmlc :: brr :: requires in
   let assets_root = Fpath.v "test" in
   let meta =
     let comp_mode = `Separate in
@@ -64,10 +65,6 @@ let test_with_brr ?(requires = []) src ~doc =
 let test_iris =
   let requires = [evidence; evidence_samples] in
   test_with_brr "test/test_iris.ml" ~requires ~doc:"Test iris"
-
-let test_color_schemes =
-  let requires = [] in
-  test_with_brr "test/test_color_schemes.ml" ~requires ~doc:"Test color schemes"
 
 let test_dev =
   let requires = [evidence; vz_plot; evidence_samples] in

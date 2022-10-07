@@ -4,6 +4,7 @@
   ---------------------------------------------------------------------------*)
 
 open Gg
+open Gg_kit
 open Vg
 open Vz
 
@@ -69,11 +70,11 @@ let image =
   let trait_count = List.length traits in
   let trait_ranges, species_range = species_stats data in
   let traits = List.combine traits trait_ranges in
-  let species_count = List.length species_range in
   let image_size = 160. in
   let size = (image_size /. (float trait_count)) in
   let pad = size *. 0.1125 in
-  let colors = Colors.qual_fixed ~a:0.8 ~size:species_count `Brewer_set2_8 in
+  let colors = Color_scheme.qualitative ~a:0.8 `Brewer_set2_8 () in
+  let colors = Array.init 8 colors in
   let cmap = Scale'.map (Scale'.ordinal species_range (Array.to_list colors)) in
   let xyset_scales = xyset_scales ~pad ~size traits traits in
   let add_ticks acc ((xi, _, xscale), (yi, _, yscale)) =

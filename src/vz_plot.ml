@@ -4,6 +4,7 @@
   ---------------------------------------------------------------------------*)
 
 open Gg
+open Gg_kit
 open Vg
 open Vz
 open Evidence
@@ -74,7 +75,7 @@ module Vmap = struct
     let range_deriver _k ~w _dom =
       Dom.v (Dom.Continuous Uniform) []
         ~none:(Color.v nan nan nan nan)
-        (Fun.const Float.nan) (Colors.turbo ())
+        (Fun.const Float.nan) (Color_scheme.sequential_turbo ())
     in
     fun ?(shape = Dom.Shape.sqrt) ?dom ?range kind var ->
       v' dom_deriver range_deriver ~shape ?dom ?range kind var

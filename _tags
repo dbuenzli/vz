@@ -2,4 +2,4 @@ true : bin_annot, safe_string
 <_b0> : -traverse
 <src> : include
 
-<src/*> : package(gg), package(vg)
+<src/*> : package(gg), package(gg.kit), package(vg)
