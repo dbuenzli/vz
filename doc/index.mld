@@ -14,6 +14,10 @@ Vz_plot
 Evidence
 }
 
+{1:vz_doc The [vz.doc] library}
+
+{!modules: Vz_doc}
+
 {1:samples The [evidence.samples] library}
 
 A few sample datasets to play with.
@@ -27,6 +31,3 @@ Evidence_diamonds
 - Split away [evidence] in its own library. Provide a tool
   to crunch data into a module.
 - A tutorial
-- Review the subsetting on {!Vz.Colors.val-qual_fixed} I'm not convinced.
-  Also sort out that internal lazy stuff (jsoo?).
-- Add more color schemes.

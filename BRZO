@@ -1,3 +1,2 @@
 (srcs-x pkg tmp test)
-(srcs-i src/evidence.ml src/evidence.mli samples)
 (ocaml (outcome top))

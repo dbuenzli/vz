@@ -298,7 +298,6 @@ module Scale' : sig
     int -> float list
 end
 
-
 (** {1:sum Statistics} *)
 
 type ('a, 'b) stat

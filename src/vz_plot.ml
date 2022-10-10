@@ -93,7 +93,6 @@ module Marks = struct
       outline : ('o, Color.t) Vmap.t;
       to_image : w:float -> 'o Dataset.t -> Box2.t * Vg.image; }
 
-
   type 'o t =
   | Dot of 'o dot
 

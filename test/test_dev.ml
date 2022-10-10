@@ -10,8 +10,6 @@ open Vz_plot
 open Evidence
 
 
-
-
 let log fmt = Format.printf (fmt ^^ "@.")
 
 let dots =

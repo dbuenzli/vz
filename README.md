@@ -4,13 +4,12 @@ Vz — Declarative data visualization for OCaml
 
 Declarative data visualization with Vg.
 
-Vz depends on [Gg][1] and [Vg][2]. It is distributed under the ISC
-license.
+Vz depends on [Gg] and [Vg]. It is distributed under the ISC license.
 
-[1]: http://erratique.ch/software/gg
-[2]: http://erratique.ch/software/vg
+[Gg]: http://erratique.ch/software/gg
+[Vg]: http://erratique.ch/software/vg
 
-Homepage: http://erratique.ch/software/vz
+Homepage: <http://erratique.ch/software/vz>
 
 # Installation
 
@@ -33,12 +32,10 @@ than on the issue tracker.
 
 # Acknowledgements
 
-This project benefits from the existence of [colorbrewer2], [d3],
-[ggplot2], [turbo], [vega-lite].
+This project benefits from the existence of [d3],
+[ggplot2], [vega-lite].
 
+[d3]: https://d3js.org/
 [ggplot2]: https://ggplot2.tidyverse.org/
 [vegalite]: https://vega.github.io/vega-lite/docs/
-[d3]: https://d3js.org/
-[colorbrewer2]: https://colorbrewer2.org/
-[turbo]: https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html
 

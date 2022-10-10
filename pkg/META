@@ -10,6 +10,8 @@ exists_if = "vz.cma"
 
 package "evidence" (
   description = "Rectangular data processing"
+  version = "%%VERSION_NUM%%"
+  directory = "evidence"
   archive(byte) = "evidence.cma"
   archive(native) = "evidence.cmxa"
   plugin(byte) = "evidence.cma"
@@ -28,6 +30,17 @@ package "plot" (
   plugin(native) = "vz_plot.cmxs"
   exists_if = "vz_plot.cma"
 )
+
+package "doc" (
+  description = "Visualization documents"
+  version = "%%VERSION_NUM%%"
+  directory = "doc"
+  requires = "gg vg vg.htmlc vz note brr brr.note vz.evidence"
+  archive(byte) = "vz_doc.cma"
+  archive(native) = "vz_doc.cmxa"
+  plugin(byte) = "vz_doc.cma"
+  plugin(native) = "vz_doc.cmxs"
+  exists_if = "vz_doc.cma")
 
 package "samples" (
   description = "Evidence sample data"
