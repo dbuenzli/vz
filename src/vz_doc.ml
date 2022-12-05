@@ -164,7 +164,7 @@ module Input = struct
          resetting the value property here works around this problem. *)
       El.set_prop El.Prop.value Jstr.empty i; El.click i
     in
-    let () = Ev.listen Ev.click forward (El.as_target button) in
+    let () = ignore (Ev.listen Ev.click forward (El.as_target button)) in
     let act = Evr.on_el Ev.change (fun _ -> get i) i in
     El.set_inline_style El.Style.display (Jstr.v "none") i;
     set_content button content;
