@@ -293,9 +293,6 @@ module Dom = struct
 
   let sqrt = pow ~exp:0.5
 
-
-  let inj a v = failwith "TODO"
-
   let discrete ?(compare = Stdlib.compare) ?pp ?none vs =
     if vs = [] then invalid_arg "Empty domain" else
     let a = let a = Array.of_list vs in Array.sort compare a; a in
