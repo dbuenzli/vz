@@ -8,6 +8,17 @@ plugin(byte) = "vz.cma"
 plugin(native) = "vz.cmxs"
 exists_if = "vz.cma"
 
+package "canvas" (
+  description = "HTML canvas helpers"
+  version = "%%VERSION_NUM%%"
+  directory = "canvas"
+  requires = "gg vg vz brr"
+  archive(byte) = "vz_canvas.cma"
+  archive(native) = "vz_canvas.cmxa"
+  plugin(byte) = "vz_canvas.cma"
+  plugin(native) = "vz_canvas.cmxs"
+  exists_if = "vz_canvas.cma" )
+
 package "evidence" (
   description = "Rectangular data processing"
   version = "%%VERSION_NUM%%"

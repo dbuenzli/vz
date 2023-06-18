@@ -9,6 +9,7 @@ let () =
     Pkg.mllib "src/vz.mllib";
     Pkg.mllib "src/vz_plot.mllib" ~dst_dir:"plot";
     Pkg.mllib "src/vz_doc.mllib" ~dst_dir:"doc";
+    Pkg.mllib "src/vz_canvas.mllib" ~dst_dir:"canvas";
     Pkg.mllib "src/evidence.mllib" ~dst_dir:"evidence";
     Pkg.lib "src/evidence_top_init.ml" ~dst:"evidence/";
     Pkg.mllib "samples/evidence_samples.mllib" ~dst_dir:"samples";

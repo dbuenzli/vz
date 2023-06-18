@@ -18,6 +18,7 @@ let brr_note = B0_ocaml.libname "brr.note"
 let vz = B0_ocaml.libname "vz"
 let vz_plot = B0_ocaml.libname "vz.plot"
 let vz_doc = B0_ocaml.libname "vz.doc"
+let vz_canvas = B0_ocaml.libname "vz.canvas"
 
 (* Libraries *)
 
@@ -43,6 +44,11 @@ let vz_plot_lib =
   let srcs = Fpath.[`File (v "src/vz_plot.mli"); `File (v "src/vz_plot.ml")] in
   let requires = [gg; gg_kit; vg; vg_htmlc; vz; evidence] in
   B0_ocaml.lib vz_plot ~doc:"The vz.plot library" ~srcs ~requires
+
+let vz_canvas_lib =
+  let srcs = Fpath.[`File (v "src/vz_canvas.mli"); `File (v "src/vz_canvas.ml")] in
+  let requires = [gg; gg_kit; vg; vz; brr] in
+  B0_ocaml.lib vz_canvas ~doc:"The vz.canvas library" ~srcs ~requires
 
 let vz_doc_lib =
   let srcs = Fpath.[`File (v "src/vz_doc.mli"); `File (v "src/vz_doc.ml")] in
@@ -78,6 +84,14 @@ let test_iris =
 let test_dev =
   let requires = [evidence; vz_plot; evidence_samples] in
   test_with_brr "test/test_dev.ml" ~requires ~doc:"Test dev"
+
+let test_isolines =
+  let requires = [vz_canvas] in
+  test_with_brr "test/isolines.ml" ~requires ~doc:"Test isolines"
+
+let test_metaballs =
+  let requires = [vz_canvas] in
+  test_with_brr "test/metaballs.ml" ~requires ~doc:"Test isolines"
 
 let test_doc =
   let requires = [note; vz_doc] in

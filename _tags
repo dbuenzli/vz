@@ -3,4 +3,5 @@ true : bin_annot, safe_string
 <src> : include
 
 <src/*> : package(gg), package(gg.kit), package(vg)
+<src/vz_canvas*> : package(brr)
 <src/vz_doc*> : package(note), package(brr), package(brr.note)
