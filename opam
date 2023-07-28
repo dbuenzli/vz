@@ -4,16 +4,15 @@ synopsis: "Declarative data visualization for OCaml"
 description: """\
 Declarative data visualization with Vg.
 
-Vz depends on [Gg][1] and [Vg][2]. It is distributed under the ISC
-license.
+Vz depends on [Gg] and [Vg]. It is distributed under the ISC license.
 
-[1]: http://erratique.ch/software/gg
-[2]: http://erratique.ch/software/vg
+[Gg]: http://erratique.ch/software/gg
+[Vg]: http://erratique.ch/software/vg
 
-Homepage: http://erratique.ch/software/vz"""
+Homepage: <http://erratique.ch/software/vz>"""
 maintainer: "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
 authors: "The vz programmers"
-license: "ISC"
+license: ["ISC" "Apache-2.0"]
 tags: ["graphics" "visualization" "declarative" "graphics" "org:erratique"]
 homepage: "https://erratique.ch/software/vz"
 doc: "https://erratique.ch/software/vz/doc/"
@@ -25,7 +24,8 @@ depends: [
   "topkg" {build & >= "1.0.3"}
   "gg" {>= "1.0.0"}
   "vg" {>= "0.9.4"}
-  "brr" {with-test}
+  "brr" {>= "0.0.6"}
+  "note"
 ]
 build: ["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"]
 dev-repo: "git+https://erratique.ch/repos/vz.git"

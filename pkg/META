@@ -46,7 +46,7 @@ package "doc" (
   description = "Visualization documents"
   version = "%%VERSION_NUM%%"
   directory = "doc"
-  requires = "gg vg vg.htmlc vz note brr brr.note vz.evidence"
+  requires = "gg vg vg.htmlc vz brr note note.brr vz.evidence"
   archive(byte) = "vz_doc.cma"
   archive(native) = "vz_doc.cmxa"
   plugin(byte) = "vz_doc.cma"

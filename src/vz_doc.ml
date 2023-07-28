@@ -3,9 +3,9 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-open Note
 open Brr
-open Brr_note
+open Note
+open Note_brr
 
 module Input = struct
   type t = El.t

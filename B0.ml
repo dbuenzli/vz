@@ -11,9 +11,9 @@ let vg_htmlc = B0_ocaml.libname "vg.htmlc"
 let evidence = B0_ocaml.libname "evidence"
 let evidence_samples = B0_ocaml.libname "evidence.samples"
 
-let note = B0_ocaml.libname "note"
 let brr = B0_ocaml.libname "brr"
-let brr_note = B0_ocaml.libname "brr.note"
+let note = B0_ocaml.libname "note"
+let note_brr = B0_ocaml.libname "note.brr"
 
 let vz = B0_ocaml.libname "vz"
 let vz_plot = B0_ocaml.libname "vz.plot"
@@ -52,7 +52,7 @@ let vz_canvas_lib =
 
 let vz_doc_lib =
   let srcs = Fpath.[`File (v "src/vz_doc.mli"); `File (v "src/vz_doc.ml")] in
-  let requires = [gg; vg; vg_htmlc; note; brr; brr_note] in
+  let requires = [gg; vg; vg_htmlc; brr; note; note_brr] in
   B0_ocaml.lib vz_doc ~doc:"The vz.doc library" ~srcs ~requires
 
 (* Tests *)
@@ -121,7 +121,8 @@ let default =
         "topkg", {|build & >= "1.0.3"|};
         "gg", {|>= "1.0.0"|};
         "vg", {|>= "0.9.4"|};
-        "brr", {|with-test|};
+        "brr", {|>= "0.0.6"|};
+        "note", {||};
       ]
     |> add B0_opam.Meta.build
       {|[["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"]]|}
