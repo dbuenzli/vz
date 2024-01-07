@@ -10,7 +10,7 @@ module Fmt = struct
   let pf = Format.fprintf
   let repeat n pp_v ppf v = for i = 1 to n do pp_v ppf v done
   let bold pp_v ppf v = pf ppf "@<0>%s%a@<0>%s" "\027[01m" pp_v v "\027[m"
-  let red pp_v ppf v = pf ppf "@<0>%s%a@<0>%s" "\031[01m" pp_v v "\027[m"
+  let red pp_v ppf v = pf ppf "@<0>%s%a@<0>%s" "\027[31m" pp_v v "\027[m"
   let bool = Format.pp_print_bool
   let int = Format.pp_print_int
   let char = Format.pp_print_char
@@ -561,7 +561,7 @@ module Dataset = struct
     Fmt.repeat (List.length vars + 1) pp_col_dots ppf ()
 
   let min_width : type a. a Var.type' -> int =
-  function Var.Nominal -> 10 | _ -> 6
+  function Var.Nominal | Var.Ordinal _ -> 10 | _ -> 6
 
   let pp_vars ppf idx_width vars =
     let pp_var ppf (Var.V var) =
