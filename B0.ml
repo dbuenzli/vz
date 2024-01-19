@@ -57,7 +57,7 @@ let test_exe ?(requires = []) src ~doc =
   let srcs = [`File src] in
   let meta = B0_meta.empty |> B0_meta.(tag test) in
   let requires = gg :: gg_kit :: vg :: vz :: requires in
-  B0_ocaml.exe (Fpath.basename ~no_ext:true src) ~meta ~requires ~srcs ~doc
+  B0_ocaml.exe (Fpath.basename ~strip_ext:true src) ~meta ~requires ~srcs ~doc
 
 let test = test_exe ~/"test/test.ml" ~doc:"Vz tests"
 
@@ -70,8 +70,8 @@ let test_with_brr ?(requires = []) src ~doc =
     |> B0_meta.add B0_jsoo.compilation_mode `Separate
     |> B0_meta.add B0_jsoo.source_map (Some `Inline)
   in
-  let name = Fpath.basename ~no_ext:true src in
-  B0_jsoo.web name ~srcs ~requires ~assets_root ~meta ~doc
+  let name = Fpath.basename ~strip_ext:true src in
+  B0_jsoo.html_page name ~srcs ~requires ~assets_root ~meta ~doc
 
 let test_iris =
   let requires = [evidence; evidence_samples] in
