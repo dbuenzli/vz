@@ -145,7 +145,6 @@ module Var = struct
     and var = {doc; exist; id; tid; type'; label; name; pp; proj} in
     var
 
-  let v ?doc ?label ?pp name type' proj = make ?doc ?label ?pp name type' proj
   let bool ?doc ?label ?pp name proj = make ?doc ?label ?pp name Bool proj
   let int ?doc ?label ?pp name proj = make ?doc ?label ?pp name Int proj
   let float ?doc ?label ?pp name proj = make ?doc ?label ?pp name Float proj
@@ -302,15 +301,15 @@ module Var = struct
   (* Standard variables *)
 
   let for_var_count var =
-    let fst = v ~doc:var.doc ~pp:var.pp var.name var.type' fst in
-    let snd = v "count" Int snd in
+    let fst = make ~doc:var.doc ~pp:var.pp var.name var.type' fst in
+    let snd = make "count" Int snd in
     fst, snd
 
   let for_var_values var =
     let doc = "domain of " ^ var.name in
-    v ~doc ~pp:var.pp var.name var.type' Fun.id
+    make ~doc ~pp:var.pp var.name var.type' Fun.id
 
-  let for_var var = v ~doc:var.doc ~pp:var.pp var.name var.type' Fun.id
+  let for_var var = make ~doc:var.doc ~pp:var.pp var.name var.type' Fun.id
   let cumsum = float "cumsum" Fun.id
 
   module Prod = struct
@@ -388,7 +387,7 @@ end
 
 module Obs = struct
   type 'o t = { doc : string; prod : ('o, 'o) Var.Prod.t; vars : 'o Var.v list }
-  let v ?(doc = "") prod = { doc; prod; vars = Var.Prod.vars prod }
+  let make ?(doc = "") prod = { doc; prod; vars = Var.Prod.vars prod }
   let empty () =
     let empty _ = invalid_arg "empty observation" in
     let var = Var.any "empty" Fun.id in
@@ -412,8 +411,8 @@ module Obs = struct
 
   let t1 = Fun.id
   let t2 v0 v1 = v0, v1
-  let o1 ?doc var = v ?doc Var.Prod.(unit t1 * var)
-  let o2 ?doc var0 var1 = v ?doc Var.Prod.(unit t2 * var0 * var1)
+  let o1 ?doc var = make ?doc Var.Prod.(unit t1 * var)
+  let o2 ?doc var0 var1 = make ?doc Var.Prod.(unit t2 * var0 * var1)
 end
 
 module Dataset = struct
@@ -738,11 +737,11 @@ module Dataset = struct
   let to_list d = Array.to_list d.os
 
   let of_t1 t l =
-    let var = Var.v "v0" t Fun.id in
+    let var = Var.make "v0" t Fun.id in
     var, make ~obs:(Obs.o1 var) (Array.of_list l)
 
   let of_t2 t0 t1 l =
-    let var0 = Var.v "v0" t0 fst and var1 = Var.v "v1" t1 snd in
+    let var0 = Var.make "v0" t0 fst and var1 = Var.make "v1" t1 snd in
     (var0, var1), make ~obs:(Obs.o2 var0 var1) (Array.of_list l)
 
   module Csv = struct
@@ -932,7 +931,7 @@ module Dataset = struct
       in
       let fst, snd = Var.for_var_count var in
       let prod = Var.Prod.(unit (fun fst snd -> (fst, snd)) * fst * snd) in
-      let obs = Obs.v prod in
+      let obs = Obs.make prod in
       make ~obs os
 
     let fsum var d = (* See §3 https://doi.org/10.1007/s00607-005-0139-x  *)

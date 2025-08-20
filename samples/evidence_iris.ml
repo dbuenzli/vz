@@ -29,7 +29,7 @@ let prod =
             species)
 
 let doc = "Fisher iris observation (1936)"
-let obs = Obs.v ~doc prod
+let obs = Obs.make ~doc prod
 let dataset = Dataset.of_array ~obs [|
   5.1, 3.5, 1.4, 0.2, "setosa";
   4.9, 3.0, 1.4, 0.2, "setosa";

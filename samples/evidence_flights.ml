@@ -75,7 +75,7 @@ let prod =
             time_hour)
 
 let doc = "tidyverse nyflights13 dataset"
-let obs = Obs.v ~doc prod
+let obs = Obs.make ~doc prod
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2022 The vz programmers

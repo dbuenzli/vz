@@ -96,10 +96,10 @@ module Var : sig
   type 'o v = V : ('o, 'a) t -> 'o v (** *)
   (** The type for existential variables for observations of type ['o]. *)
 
-  val v :
+  val make :
     ?doc:string -> ?label:string -> ?pp:'a fmt -> name -> 'a type' ->
     ('o -> 'a) -> ('o, 'a) t
-  (** [v ?doc ?pp name type' proj] an observation variable with
+  (** [make ?doc ?pp name type' proj] an observation variable with
 
       {ul
       {- [name] the name or identifier of the variable.}
@@ -392,8 +392,8 @@ module Obs : sig
   type 'o t
   (** The type for describing observations of type ['o]. *)
 
-  val v : ?doc:string -> ('o, 'o) Var.Prod.t -> 'o t
-  (** [v ?doc vars] are observations described by the variables product
+  val make : ?doc:string -> ('o, 'o) Var.Prod.t -> 'o t
+  (** [make ?doc vars] are observations described by the variables product
       [vars]. [doc] is a documentation string. *)
 
   val empty : unit -> 'o t

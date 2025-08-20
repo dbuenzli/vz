@@ -45,7 +45,7 @@ let prod =
             x * y * z)
 
 let doc = "Diamond observation distributed with ggplot2"
-let obs = Obs.v ~doc prod
+let obs = Obs.make ~doc prod
 let dataset = Dataset.of_array ~obs [|
   0.23, "Ideal", "E", "SI2", 61.5, 55., 326, 3.95, 3.98, 2.43;
   0.21, "Premium", "E", "SI1", 59.8, 61., 326, 3.89, 3.84, 2.31;
