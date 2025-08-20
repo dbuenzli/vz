@@ -321,6 +321,9 @@ module Var : sig
 
     val vars : ('o, 'o) t -> 'o v list
     (** [vars p] are the variables in product [p]. *)
+
+    val pp : ('o, 'o) t -> 'o fmt
+    (** [pp p] is a pretty printer for [p] products. *)
   end
 
   (** Generalize {!Prod}.
@@ -416,6 +419,9 @@ module Obs : sig
   (** [set obs var v o] sets variable [var] to [v] in [o]. Raises
       [Invalid_argument] if the product is absurd and has no effect if
       [var] is not part of [prod obs]. *)
+
+  val pp : 'o t -> Format.formatter -> 'o -> unit
+  (** [pp] is an observation formatter. *)
 
   val o1 : ?doc:string -> ('a, 'a) Var.t -> 'a t
   val o2 :
@@ -823,6 +829,7 @@ end
 
 (** {1:todo TODO}
 
+- Add `Obs.diff`.
 - Maybe we should rather first have a lightweight DSL
   of typed projections. And a {!Var} is just a named typed
   projection. With respect to this the {!O} module DSL may not be such

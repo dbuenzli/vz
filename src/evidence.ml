@@ -335,6 +335,19 @@ module Var = struct
       | Prod (p, var) -> loop (var.exist :: acc) p
       in
       loop [] p
+
+    let pp p =
+      let pp_var var ppf o =
+        Fmt.pf ppf "@[%s =@ %a@]" (name var) (pp_obs var) o;
+      in
+      let rec loop : type o a. (o, a) t -> Format.formatter -> o -> unit =
+      fun p ppf o -> match p with
+      | Unit _ -> Fmt.pf ppf "@[<v2>{ "
+      | Prod (Unit _ as p, var) -> loop p ppf o; pp_var var ppf o
+      | Prod (p, var) ->
+          loop p ppf o; Format.pp_print_cut ppf (); pp_var var ppf o
+      in
+      fun ppf o -> loop p ppf o; Fmt.pf ppf "}@]"
   end
 
 
@@ -413,6 +426,9 @@ module Obs = struct
   let t2 v0 v1 = v0, v1
   let o1 ?doc var = make ?doc Var.Prod.(unit t1 * var)
   let o2 ?doc var0 var1 = make ?doc Var.Prod.(unit t2 * var0 * var1)
+
+  let pp o = Var.Prod.pp o.prod
+
 end
 
 module Dataset = struct
