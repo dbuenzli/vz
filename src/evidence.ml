@@ -496,7 +496,7 @@ module Dataset = struct
   let length d = Array.length d.os
   let vars d = (Obs.vars d.obs)
   let get i d =
-    if i < 0 || i >= length d - 1
+    if i < 0 || i >= length d
     then invalid_arg (err_bounds i 0 (length d - 1)) else uget d.os i
 
   (* Traversing *)
