@@ -347,7 +347,7 @@ module Var = struct
       | Prod (p, var) ->
           loop p ppf o; Format.pp_print_cut ppf (); pp_var var ppf o
       in
-      fun ppf o -> loop p ppf o; Fmt.pf ppf "}@]"
+      fun ppf o -> loop p ppf o; Fmt.pf ppf " }@]"
   end
 
 
@@ -541,6 +541,7 @@ module Dataset = struct
     | None -> None
     | Some (o, k) ->
         let b = Buffer.make ~size:(length d - k) o in
+        Buffer.add b o;
         for i = k + 1 to length d - 1 do match f i (uget d.os i) with
         | None -> () | Some o -> Buffer.add b o
         done;
